@@ -1,4 +1,4 @@
-# 🧬 TE Evaluation Tool v5.0
+# 🧬 TE Evaluation Tool v1.0
 
 Ferramenta padronizada para avaliação de modelos de classificação de Elementos Transponíveis (TEs) com métricas completas e mapeamento automático de labels.
 
@@ -88,8 +88,8 @@ Suporta múltiplos formatos de headers FASTA:
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/te-evaluation-tool.git
-cd te-evaluation-tool
+git clone https://github.com/010010110/te_eval_tool.git
+cd te-eval-tool
 
 # 2. Configure ambientes virtuais
 python3 te_eval_cli.py env setup
@@ -482,30 +482,18 @@ Contribuições são bem-vindas! Para contribuir:
 
 ### 🐛 Reportando Bugs
 
-Use as [Issues do GitHub](https://github.com/seu-usuario/te-evaluation-tool/issues) para:
+Use as [Issues do GitHub](https://github.com/010010110/te_eval_tool/issues) para:
 - Reportar bugs
 - Solicitar novas funcionalidades
 - Discutir melhorias
-
-### 📧 Contato
-
-- **Email:** gabriel.arruda@example.com
-- **LinkedIn:** [Gabriel Arruda](https://linkedin.com/in/gabriel-arruda)
-- **ORCID:** 0000-0000-0000-0000
 
 ## 📄 Licença
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## 🙏 Agradecimentos
-
-- **UEPG** - Universidade Estadual de Ponta Grossa
-- **ClassifyTE Team** - Pelo modelo base utilizado
-- **Comunidade de Bioinformática** - Pelas discussões e feedback
-
 ---
 
 <p align="center">
   Desenvolvido com 💙 para a comunidade científica<br>
-  <sub>TE Evaluation Tool v5.0 - 2025</sub>
+  <sub>TE Evaluation Tool v1.0 - 2025</sub>
 </p>
