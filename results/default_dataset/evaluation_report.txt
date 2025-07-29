@@ -1,0 +1,193 @@
+================================================================================
+RELATÓRIO DE AVALIAÇÃO - ELEMENTOS TRANSPONÍVEIS
+================================================================================
+
+RESUMO EXECUTIVO
+----------------------------------------
+Total de sequências: 302
+Número de classes: 11
+Acurácia geral: 0.0397
+F1-Score (macro): 0.1306
+F1-Score hierárquico: 0.0844
+Youden's J Statistic: 0.1321
+
+MÉTRICAS PADRÃO
+----------------------------------------
+Acurácia: 0.0397
+Precisão (macro): 0.1121
+Precisão (micro): 0.0397
+Precisão (weighted): 0.0231
+Recall (macro): 0.1739
+Recall (micro): 0.0397
+Recall (weighted): 0.0397
+F1-Score (macro): 0.1306
+F1-Score (micro): 0.0397
+F1-Score (weighted): 0.0282
+Especificidade (macro): 0.9582
+
+MÉTRICAS AVANÇADAS
+----------------------------------------
+auROC (macro): 0.6791
+mAP (macro): 0.3216
+Youden's J Statistic: 0.1321
+
+MÉTRICAS HIERÁRQUICAS
+----------------------------------------
+Precisão hierárquica: 0.0847
+Recall hierárquico: 0.0842
+F1-Score hierárquico: 0.0844
+Distância hierárquica média: 5.8576
+Distância hierárquica máxima: 7.0000
+
+MÉTRICAS POR CLASSE
+----------------------------------------
+
+Classe: 5S
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: 7SL
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: Bel-Pao
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: Copia
+  Precisão: 0.8000
+  Recall: 1.0000
+  F1-Score: 0.8889
+  Suporte: 4.0
+
+Classe: DIRS
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: I
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 18.0
+
+Classe: Jockey
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: L1
+  Precisão: 0.3333
+  Recall: 1.0000
+  F1-Score: 0.5000
+  Suporte: 3.0
+
+Classe: LTR
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 3.0
+
+Classe: Mutator
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: P
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 221.0
+
+Classe: PIF-Harbinger
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: PiggyBac
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: R2
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: RTE
+  Precisão: 1.0000
+  Recall: 1.0000
+  F1-Score: 1.0000
+  Suporte: 1.0
+
+Classe: Retrotransposon
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 2.0
+
+Classe: SINE
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 3.0
+
+Classe: SubclassI
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: Tc1-Mariner
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: Unknown
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 42.0
+
+Classe: gypsy
+  Precisão: 0.4444
+  Recall: 1.0000
+  F1-Score: 0.6154
+  Suporte: 4.0
+
+Classe: hAT
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 1.0
+
+Classe: tRNA
+  Precisão: 0.0000
+  Recall: 0.0000
+  F1-Score: 0.0000
+  Suporte: 0.0
+
+Classe: macro avg
+  Precisão: 0.1121
+  Recall: 0.1739
+  F1-Score: 0.1306
+  Suporte: 302.0
+
+Classe: weighted avg
+  Precisão: 0.0231
+  Recall: 0.0397
+  F1-Score: 0.0282
+  Suporte: 302.0

@@ -1,0 +1,12 @@
+{
+  "start_time": "2025-07-28T22:25:45.568535",
+  "model": "classifyte",
+  "input_file": "data/demo_features.fasta",
+  "output_dir": "results/demo_features",
+  "algorithm": "lcpnb",
+  "model_file": "ClassifyTE_combined.pkl",
+  "node_file": "node.txt",
+  "end_time": "2025-07-28T22:25:56.559055",
+  "duration_seconds": 10.99052,
+  "success": true
+}
