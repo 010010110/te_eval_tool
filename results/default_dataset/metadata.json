@@ -1,5 +1,5 @@
 {
-  "total_sequences": 302,
+  "total_sequences": 7754,
   "model": "classifyte",
   "algorithm": "lcpnb",
   "model_file": "ClassifyTE_combined.pkl",
