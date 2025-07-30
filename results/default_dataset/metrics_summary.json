@@ -1,0 +1,11 @@
+{
+  "accuracy": 0.42236265153469177,
+  "precision_macro": 0.24546421956878284,
+  "recall_macro": 0.28443723294191764,
+  "f1_macro": 0.22494289438779236,
+  "specificity_macro": 0.9774790789069643,
+  "youdens_j": 0.26191631184888187,
+  "hierarchical_f1": 0.5739141057801147,
+  "total_samples": 7754,
+  "num_classes": 18
+}
