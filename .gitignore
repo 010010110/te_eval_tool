@@ -1,3 +1,9 @@
 .venv
 model_envs
 models/classifyte_models
+default_dataset
+data
+ClassifyTE
+test*
+__pycache__
+results

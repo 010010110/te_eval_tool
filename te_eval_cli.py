@@ -1,4 +1,3 @@
-# te_eval_cli.py - Versão 5 - CLI otimizado com gerenciamento de ambientes
 import click
 import subprocess
 import os
@@ -24,7 +23,7 @@ except ImportError:
     FASTALabelMapper = None
 
 @click.group()
-@click.version_option(version='5.0.0')
+@click.version_option(version='5.0.1')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
 @click.pass_context
 def cli(ctx, verbose):
@@ -101,10 +100,13 @@ def clean_envs():
               type=click.Choice(['fasta', 'csv']), help='Formato do arquivo')
 @click.option('--detailed', is_flag=True, help='Validação detalhada')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
-def validate(input_file, format_type, detailed, verbose):
+@click.pass_context
+def validate(ctx, input_file, format_type, detailed, verbose):
     """Validar arquivo de entrada"""
     
-    verbose = verbose
+    # Obter verbose do contexto se não especificado
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
     
     def validate_fasta_detailed(file_path):
         """Validação detalhada de FASTA"""
@@ -251,11 +253,15 @@ def validate(input_file, format_type, detailed, verbose):
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
 @click.option('--auto-label', is_flag=True, 
               help='Mapear automaticamente labels do FASTA para avaliação')
-def run(model, input_file, output_dir, algorithm, model_file, node_file, 
+@click.pass_context
+def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file, 
         skip_evaluation, clean, verbose, auto_label):
     """Executar classificação usando ambiente específico do modelo"""
     
-    verbose = verbose
+    # Obter verbose do contexto se não especificado
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
+    
     start_time = datetime.now()
     
     # Verificar se EnvironmentManager está disponível
@@ -534,12 +540,17 @@ def run_classifyte(python_path, input_file, output_dir, algorithm, model_file,
 @click.option('--validate-only', is_flag=True, help='Apenas validar mapeamentos')
 @click.option('--tree-file', default='nodes/tree.txt', help='Arquivo de hierarquia')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
-def map_labels(fasta, predictions, output, validate_only, tree_file, verbose):
+@click.pass_context
+def map_labels(ctx, fasta, predictions, output, validate_only, tree_file, verbose):
     """Mapear headers FASTA para códigos hierárquicos"""
     
     if not FASTALabelMapper:
         click.echo("❌ FASTALabelMapper não disponível")
         sys.exit(1)
+    
+    # Obter verbose do contexto se não especificado
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
     
     click.echo(f"🏷️  Mapeando labels de: {fasta}")
     
@@ -584,10 +595,13 @@ def map_labels(fasta, predictions, output, validate_only, tree_file, verbose):
 @click.option('--format', default='detailed', type=click.Choice(['summary', 'detailed', 'json']),
               help='Formato do relatório')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
-def evaluate_metrics(predictions, output_dir, hierarchy, format, verbose):
+@click.pass_context
+def evaluate_metrics(ctx, predictions, output_dir, hierarchy, format, verbose):
     """Avaliar predições com métricas padronizadas completas"""
     
-    verbose = verbose
+    # Obter verbose do contexto se não especificado
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
     
     if not TEMetricsEvaluator:
         click.echo("❌ TEMetricsEvaluator não disponível")
@@ -667,142 +681,482 @@ def evaluate_metrics(predictions, output_dir, hierarchy, format, verbose):
 
 # ==================== COMANDOS DE COMPARAÇÃO ====================
 
+
 @cli.command('compare')
 @click.option('--results-dir', required=True, type=click.Path(exists=True),
               help='Diretório com múltiplos resultados')
 @click.option('--output', default='comparison_results', help='Diretório de saída para comparação')
 @click.option('--metric', default='f1_macro', help='Métrica principal para comparação')
+@click.option('--auto-evaluate', is_flag=True, 
+              help='Calcular métricas automaticamente para arquivos sem avaliação')
+@click.option('--include-incomplete', is_flag=True, 
+              help='Incluir resultados sem métricas completas')
+@click.option('--min-samples', default=1, help='Número mínimo de amostras para incluir')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
-def compare(results_dir, output, metric, verbose):
-    """Comparar múltiplos resultados de classificação"""
+@click.pass_context
+def compare(ctx, results_dir, output, metric, auto_evaluate, include_incomplete, min_samples, verbose):
+    """Comparar múltiplos resultados de classificação com avaliação automática"""
     
-    verbose = ctx.obj.get('verbose', False)
+    # Obter verbose do contexto se não especificado
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
+    
     results_path = Path(results_dir)
     output_path = Path(output)
     output_path.mkdir(parents=True, exist_ok=True)
     
     click.echo(f"🔍 Comparando resultados em: {results_path}")
+    click.echo(f"📊 Métrica principal: {metric}")
     
-    # Procurar arquivos de métricas
-    metrics_files = list(results_path.glob("**/metrics_summary.json"))
-    prediction_files = list(results_path.glob("**/predicted_results.csv"))
+    if auto_evaluate:
+        click.echo("🔬 Modo auto-avaliação ativado")
+    if include_incomplete:
+        click.echo("📋 Incluindo resultados incompletos")
     
-    if not metrics_files and not prediction_files:
-        click.echo("❌ Nenhum arquivo de resultado encontrado")
+    # Buscar todos os diretórios de resultados
+    result_dirs = []
+    for item in results_path.iterdir():
+        if item.is_dir():
+            # Verificar se contém arquivos de resultado
+            has_predictions = bool(list(item.glob("**/predicted_*.csv")))
+            has_metrics = bool(list(item.glob("**/metrics_summary.json")))
+            
+            if has_predictions or has_metrics:
+                result_dirs.append(item)
+                if verbose:
+                    status = "✅ com métricas" if has_metrics else "📄 só predições"
+                    click.echo(f"   {status}: {item.name}")
+    
+    if not result_dirs:
+        click.echo("❌ Nenhum diretório de resultado encontrado")
+        click.echo("   Estrutura esperada: cada subdiretório deve conter predicted_*.csv ou metrics_summary.json")
         return
+    
+    click.echo(f"📁 Encontrados {len(result_dirs)} diretórios de resultado")
     
     comparison_data = []
     
-    # Processar arquivos de métricas
-    for metrics_file in metrics_files:
-        run_name = metrics_file.parent.name
+    # Processar cada diretório de resultado
+    for result_dir in result_dirs:
+        run_name = result_dir.name
         
-        try:
-            with open(metrics_file, 'r') as f:
-                metrics = json.load(f)
-            
-            data = {"run": run_name, "source": "metrics"}
-            data.update(metrics)
-            comparison_data.append(data)
-            
-            if verbose:
-                click.echo(f"   📊 {run_name}: {metrics.get(metric, 'N/A')}")
+        if verbose:
+            click.echo(f"\n🔄 Processando: {run_name}")
+        
+        # Procurar métricas existentes
+        metrics_files = list(result_dir.glob("**/metrics_summary.json"))
+        prediction_files = list(result_dir.glob("**/predicted_*.csv"))
+        
+        run_data = {
+            "run": run_name,
+            "source": "unknown",
+            "total_samples": 0,
+            "has_metrics": len(metrics_files) > 0,
+            "has_predictions": len(prediction_files) > 0
+        }
+        
+        # Tentar carregar métricas existentes
+        if metrics_files:
+            metrics_file = metrics_files[0]  # Usar o primeiro encontrado
+            try:
+                with open(metrics_file, 'r') as f:
+                    metrics = json.load(f)
                 
-        except Exception as e:
-            click.echo(f"   ❌ Erro ao ler {metrics_file}: {str(e)}")
-    
-    # Processar arquivos de predição sem métricas
-    for pred_file in prediction_files:
-        run_name = pred_file.parent.name
+                run_data.update(metrics)
+                run_data["source"] = "existing_metrics"
+                
+                if verbose:
+                    click.echo(f"   ✅ Métricas carregadas: {metrics.get(metric, 'N/A')}")
+                
+            except Exception as e:
+                if verbose:
+                    click.echo(f"   ⚠️ Erro ao ler métricas: {str(e)}")
         
-        # Verificar se já foi processado via metrics
-        if any(item['run'] == run_name for item in comparison_data):
+        # Se não tem métricas mas tem predições, processar
+        elif prediction_files:
+            prediction_file = prediction_files[0]  # Usar o primeiro encontrado
+            
+            try:
+                df = pd.read_csv(prediction_file)
+                run_data["total_samples"] = len(df)
+                run_data["source"] = "predictions_only"
+                
+                if "Predicted label" in df.columns:
+                    predictions = df["Predicted label"].value_counts()
+                    run_data["unique_predictions"] = len(predictions)
+                    run_data["top_prediction"] = predictions.index[0] if len(predictions) > 0 else "N/A"
+                
+                # Auto-avaliar se solicitado e temos labels verdadeiros
+                if auto_evaluate and "Actual_Label" in df.columns and TEMetricsEvaluator:
+                    if verbose:
+                        click.echo(f"   🔬 Calculando métricas automaticamente...")
+                    
+                    try:
+                        # Criar diretório temporário para métricas
+                        temp_metrics_dir = result_dir / "auto_metrics"
+                        temp_metrics_dir.mkdir(exist_ok=True)
+                        
+                        evaluator = TEMetricsEvaluator()
+                        metrics = evaluator.evaluate_predictions(
+                            str(prediction_file), 
+                            str(temp_metrics_dir)
+                        )
+                        
+                        if isinstance(metrics, dict) and 'accuracy' in metrics:
+                            # Filtrar apenas métricas numéricas para comparação
+                            numeric_metrics = {}
+                            for key, value in metrics.items():
+                                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                                    numeric_metrics[key] = value
+                            
+                            run_data.update(numeric_metrics)
+                            run_data["source"] = "auto_evaluated"
+                            
+                            if verbose:
+                                click.echo(f"   ✅ Auto-avaliação: {metrics.get(metric, 'N/A')}")
+                        
+                    except Exception as e:
+                        if verbose:
+                            click.echo(f"   ⚠️ Erro na auto-avaliação: {str(e)}")
+                
+                elif auto_evaluate and "Actual_Label" not in df.columns:
+                    if verbose:
+                        click.echo(f"   ⚠️ Sem labels verdadeiros para auto-avaliação")
+                
+            except Exception as e:
+                if verbose:
+                    click.echo(f"   ❌ Erro ao processar predições: {str(e)}")
+                continue
+        
+        # Aplicar filtros
+        if run_data["total_samples"] < min_samples:
+            if verbose:
+                click.echo(f"   ⏩ Pulando: muito poucas amostras ({run_data['total_samples']})")
             continue
         
-        try:
-            df = pd.read_csv(pred_file)
-            
-            data = {
-                "run": run_name,
-                "source": "predictions",
-                "total_samples": len(df)
-            }
-            
-            if "Predicted label" in df.columns:
-                predictions = df["Predicted label"].value_counts()
-                data["unique_predictions"] = len(predictions)
-                data["top_prediction"] = predictions.index[0] if len(predictions) > 0 else "N/A"
-            
-            comparison_data.append(data)
-            
-        except Exception as e:
-            click.echo(f"   ❌ Erro ao ler {pred_file}: {str(e)}")
+        # Se não incluir incompletos, pular runs sem métricas
+        if not include_incomplete and run_data["source"] in ["predictions_only"]:
+            if verbose:
+                click.echo(f"   ⏩ Pulando: sem métricas completas")
+            continue
+        
+        comparison_data.append(run_data)
+        
+        if verbose:
+            click.echo(f"   ✅ Adicionado à comparação")
     
-    if comparison_data:
-        # Criar DataFrame para comparação
-        comparison_df = pd.DataFrame(comparison_data)
+    if not comparison_data:
+        click.echo("❌ Nenhum resultado válido encontrado após filtros")
+        click.echo("💡 Dicas:")
+        click.echo("   - Use --include-incomplete para incluir resultados sem métricas")
+        click.echo("   - Use --auto-evaluate para calcular métricas automaticamente") 
+        click.echo("   - Verifique se os arquivos predicted_*.csv existem")
+        return
+    
+    # Criar DataFrame para comparação
+    comparison_df = pd.DataFrame(comparison_data)
+    
+    # Salvar comparação completa
+    comparison_file = output_path / "comparison_results.csv"
+    comparison_df.to_csv(comparison_file, index=False)
+    
+    # Mostrar resumo
+    click.echo(f"\n📊 COMPARAÇÃO DE {len(comparison_data)} EXECUÇÕES:")
+    click.echo("=" * 60)
+    
+    # Estatísticas por fonte
+    source_counts = comparison_df["source"].value_counts()
+    click.echo("📋 Por tipo de dados:")
+    for source, count in source_counts.items():
+        source_labels = {
+            "existing_metrics": "Com métricas existentes",
+            "auto_evaluated": "Auto-avaliadas",
+            "predictions_only": "Apenas predições"
+        }
+        label = source_labels.get(source, source)
+        click.echo(f"   {label}: {count}")
+    
+    # Ranking por métrica se disponível
+    if metric in comparison_df.columns:
+        # Filtrar apenas runs com a métrica
+        metric_df = comparison_df[comparison_df[metric].notna()]
         
-        # Salvar comparação
-        comparison_file = output_path / "comparison_results.csv"
-        comparison_df.to_csv(comparison_file, index=False)
-        
-        # Mostrar resumo
-        click.echo(f"\n📊 COMPARAÇÃO DE {len(comparison_data)} EXECUÇÕES:")
-        click.echo("=" * 60)
-        
-        # Ordenar por métrica se disponível
-        if metric in comparison_df.columns:
-            comparison_df_sorted = comparison_df.sort_values(metric, ascending=False)
-            click.echo(f"Ranking por {metric}:")
-            for i, (_, row) in enumerate(comparison_df_sorted.iterrows(), 1):
-                metric_value = row.get(metric, 'N/A')
-                click.echo(f"  {i}. {row['run']}: {metric_value}")
-        else:
-            for _, row in comparison_df.iterrows():
-                click.echo(f"  - {row['run']}: {row.get('total_samples', 'N/A')} sequências")
-        
-        # Estatísticas gerais
-        if metric in comparison_df.columns:
-            metric_values = comparison_df[metric].dropna()
-            if len(metric_values) > 0:
-                click.echo(f"\nEstatísticas de {metric}:")
-                click.echo(f"  Média: {metric_values.mean():.4f}")
-                click.echo(f"  Desvio padrão: {metric_values.std():.4f}")
-                click.echo(f"  Melhor: {metric_values.max():.4f}")
-                click.echo(f"  Pior: {metric_values.min():.4f}")
-        
-        # Gerar relatório detalhado
-        report_file = output_path / "comparison_report.txt"
-        with open(report_file, 'w') as f:
-            f.write("RELATÓRIO DE COMPARAÇÃO - TE EVALUATION TOOL\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(f"Gerado em: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Total de execuções: {len(comparison_data)}\n")
-            f.write(f"Métrica principal: {metric}\n\n")
+        if len(metric_df) > 0:
+            metric_df_sorted = metric_df.sort_values(metric, ascending=False)
             
-            f.write("RESULTADOS DETALHADOS:\n")
-            f.write("-" * 30 + "\n")
-            for _, row in comparison_df.iterrows():
-                f.write(f"\nExecução: {row['run']}\n")
-                for col, val in row.items():
-                    if col != 'run':
-                        f.write(f"  {col}: {val}\n")
+            click.echo(f"\n🏆 RANKING POR {metric.upper()}:")
+            click.echo("-" * 40)
+            for i, (_, row) in enumerate(metric_df_sorted.iterrows(), 1):
+                metric_value = row[metric]
+                source_icon = {"existing_metrics": "📊", "auto_evaluated": "🔬", "predictions_only": "📄"}.get(row["source"], "❓")
+                click.echo(f"  {i:2d}. {source_icon} {row['run']:<20} : {metric_value:.4f}")
+            
+            # Estatísticas da métrica
+            metric_values = metric_df[metric]
+            click.echo(f"\n📈 ESTATÍSTICAS DE {metric.upper()}:")
+            click.echo(f"   Média: {metric_values.mean():.4f}")
+            click.echo(f"   Mediana: {metric_values.median():.4f}")
+            click.echo(f"   Desvio padrão: {metric_values.std():.4f}")
+            click.echo(f"   Melhor: {metric_values.max():.4f}")
+            click.echo(f"   Pior: {metric_values.min():.4f}")
         
-        click.echo(f"\n💾 Comparação salva:")
-        click.echo(f"   📊 {comparison_file}")
-        click.echo(f"   📖 {report_file}")
-        
+        else:
+            click.echo(f"\n⚠️ Nenhum resultado com métrica '{metric}' encontrado")
+    
     else:
-        click.echo("❌ Nenhum dado válido encontrado para comparação")
+        click.echo(f"\n⚠️ Métrica '{metric}' não encontrada nos resultados")
+        available_metrics = [col for col in comparison_df.columns if comparison_df[col].dtype in ['float64', 'int64']]
+        if available_metrics:
+            click.echo(f"📊 Métricas disponíveis: {', '.join(available_metrics[:5])}")
+    
+    # Resumo geral
+    click.echo(f"\n📋 RESUMO GERAL:")
+    total_samples = comparison_df["total_samples"].sum()
+    avg_samples = comparison_df["total_samples"].mean()
+    
+    click.echo(f"   Total de sequências processadas: {total_samples:,}")
+    click.echo(f"   Média por execução: {avg_samples:.1f}")
+    
+    # Salvar relatório simples (sem função externa)
+    report_file = output_path / "comparison_report.txt"
+    with open(report_file, 'w') as f:
+        f.write(f"RELATÓRIO DE COMPARAÇÃO - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("=" * 50 + "\n\n")
+        f.write(f"Total de execuções: {len(comparison_data)}\n")
+        f.write(f"Métrica principal: {metric}\n\n")
+        
+        for _, row in comparison_df.iterrows():
+            f.write(f"\nExecução: {row['run']}\n")
+            f.write(f"Fonte: {row['source']}\n")
+            f.write(f"Amostras: {row['total_samples']}\n")
+            if metric in row and pd.notna(row[metric]):
+                f.write(f"{metric}: {row[metric]:.4f}\n")
+    
+    click.echo(f"\n💾 ARQUIVOS GERADOS:")
+    click.echo(f"   📊 {comparison_file}")
+    click.echo(f"   📖 {report_file}")
+
+    runs_without_metrics = len(comparison_df[comparison_df["source"] == "predictions_only"])
+    if runs_without_metrics > 0:
+        click.echo(f"\n💡 SUGESTÕES:")
+        click.echo(f"   • {runs_without_metrics} execuções sem métricas completas")
+        click.echo(f"   • Use --auto-evaluate para calcular automaticamente")
+        click.echo(f"   • Ou execute 'evaluate' manualmente em cada resultado")
 
 # ==================== COMANDOS UTILITÁRIOS ====================
+
+@cli.command('diagnose')
+@click.option('--results-dir', required=True, type=click.Path(exists=True),
+              help='Diretório com resultados para diagnosticar')
+@click.option('--fix', is_flag=True, help='Tentar corrigir problemas automaticamente')
+@click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
+@click.pass_context
+def diagnose(ctx, results_dir, fix, verbose):
+    """Diagnosticar problemas em diretórios de resultados"""
+    
+    if not verbose:
+        verbose = ctx.obj.get('verbose', False)
+    
+    results_path = Path(results_dir)
+    click.echo(f"🔍 Diagnosticando: {results_path}")
+    
+    issues = []
+    fixable_issues = []
+    
+    # Verificar estrutura de diretórios
+    subdirs = [d for d in results_path.iterdir() if d.is_dir()]
+    
+    click.echo(f"\n📁 ESTRUTURA DE DIRETÓRIOS:")
+    click.echo(f"   Encontrados {len(subdirs)} subdiretórios")
+    
+    for subdir in subdirs:
+        click.echo(f"\n📂 {subdir.name}:")
+        
+        # Verificar arquivos de predição
+        prediction_files = list(subdir.glob("**/predicted_*.csv"))
+        metrics_files = list(subdir.glob("**/metrics_summary.json"))
+        
+        click.echo(f"   📄 Arquivos de predição: {len(prediction_files)}")
+        click.echo(f"   📊 Arquivos de métricas: {len(metrics_files)}")
+        
+        if prediction_files:
+            pred_file = prediction_files[0]
+            click.echo(f"   📍 Predições: {pred_file.relative_to(results_path)}")
+            
+            # Analisar arquivo de predição
+            try:
+                df = pd.read_csv(pred_file)
+                click.echo(f"   🔢 Linhas: {len(df)}")
+                click.echo(f"   📋 Colunas: {list(df.columns)}")
+                
+                # Verificar colunas importantes
+                required_cols = ['Sequence ID', 'Predicted label']
+                missing_cols = [col for col in required_cols if col not in df.columns]
+                
+                if missing_cols:
+                    issue = f"{subdir.name}: Colunas obrigatórias faltando: {missing_cols}"
+                    issues.append(issue)
+                    click.echo(f"   ❌ {issue}")
+                
+                # Verificar se tem labels verdadeiros
+                has_actual_labels = 'Actual_Label' in df.columns
+                actual_label_count = 0
+                if has_actual_labels:
+                    actual_label_count = df['Actual_Label'].notna().sum()
+                
+                click.echo(f"   🏷️  Labels verdadeiros: {'Sim' if has_actual_labels else 'Não'}")
+                if has_actual_labels:
+                    click.echo(f"   📊 Labels válidos: {actual_label_count}/{len(df)}")
+                    
+                    if actual_label_count == 0:
+                        issue = f"{subdir.name}: Labels verdadeiros vazios"
+                        issues.append(issue)
+                        click.echo(f"   ⚠️  Todos os labels verdadeiros estão vazios")
+                    elif actual_label_count < len(df):
+                        issue = f"{subdir.name}: Labels verdadeiros parcialmente vazios"
+                        issues.append(issue)
+                        click.echo(f"   ⚠️  Alguns labels verdadeiros estão vazios")
+                
+                # Verificar distribuição de predições
+                if 'Predicted label' in df.columns:
+                    pred_dist = df['Predicted label'].value_counts()
+                    click.echo(f"   📈 Predições únicas: {len(pred_dist)}")
+                    if len(pred_dist) > 0:
+                        click.echo(f"   🔝 Mais comum: {pred_dist.index[0]} ({pred_dist.iloc[0]} vezes)")
+                
+                # Verificar se precisa de avaliação
+                if has_actual_labels and actual_label_count > 0 and not metrics_files:
+                    fixable_issue = {
+                        'type': 'missing_metrics',
+                        'dir': subdir,
+                        'pred_file': pred_file,
+                        'description': f"{subdir.name}: Tem labels verdadeiros mas sem métricas"
+                    }
+                    fixable_issues.append(fixable_issue)
+                    click.echo(f"   🔧 CORRIGÍVEL: Pode calcular métricas automaticamente")
+                
+            except Exception as e:
+                issue = f"{subdir.name}: Erro ao ler predições: {str(e)}"
+                issues.append(issue)
+                click.echo(f"   ❌ Erro ao ler arquivo: {str(e)}")
+        
+        else:
+            issue = f"{subdir.name}: Nenhum arquivo de predição encontrado"
+            issues.append(issue)
+            click.echo(f"   ❌ Nenhum arquivo predicted_*.csv encontrado")
+        
+        if metrics_files:
+            metrics_file = metrics_files[0]
+            try:
+                with open(metrics_file, 'r') as f:
+                    metrics = json.load(f)
+                click.echo(f"   ✅ Métricas carregadas: {len(metrics)} campos")
+                
+                # Verificar métricas principais
+                key_metrics = ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']
+                available_key_metrics = [m for m in key_metrics if m in metrics]
+                click.echo(f"   📊 Métricas principais: {len(available_key_metrics)}/{len(key_metrics)}")
+                
+            except Exception as e:
+                issue = f"{subdir.name}: Erro ao ler métricas: {str(e)}"
+                issues.append(issue)
+                click.echo(f"   ❌ Erro ao ler métricas: {str(e)}")
+    
+    # Resumo dos problemas
+    click.echo(f"\n🔍 RESUMO DO DIAGNÓSTICO:")
+    click.echo("=" * 40)
+    
+    if issues:
+        click.echo(f"❌ {len(issues)} problemas encontrados:")
+        for i, issue in enumerate(issues, 1):
+            click.echo(f"   {i}. {issue}")
+    else:
+        click.echo("✅ Nenhum problema grave encontrado")
+    
+    if fixable_issues:
+        click.echo(f"\n🔧 {len(fixable_issues)} problemas corrigíveis:")
+        for i, issue in enumerate(fixable_issues, 1):
+            click.echo(f"   {i}. {issue['description']}")
+        
+        # Oferecer correção automática
+        if fix:
+            click.echo(f"\n🛠️  APLICANDO CORREÇÕES:")
+            
+            for issue in fixable_issues:
+                if issue['type'] == 'missing_metrics':
+                    click.echo(f"   🔬 Calculando métricas para {issue['dir'].name}...")
+                    
+                    try:
+                        if TEMetricsEvaluator:
+                            evaluator = TEMetricsEvaluator()
+                            metrics_dir = issue['dir'] / "auto_metrics"
+                            metrics_dir.mkdir(exist_ok=True)
+                            
+                            metrics = evaluator.evaluate_predictions(
+                                str(issue['pred_file']), 
+                                str(metrics_dir)
+                            )
+                            
+                            if isinstance(metrics, dict) and 'accuracy' in metrics:
+                                click.echo(f"   ✅ Métricas calculadas: F1={metrics.get('f1_macro', 0):.3f}")
+                            else:
+                                click.echo(f"   ⚠️  Métricas calculadas mas incompletas")
+                        else:
+                            click.echo(f"   ❌ TEMetricsEvaluator não disponível")
+                    
+                    except Exception as e:
+                        click.echo(f"   ❌ Erro ao calcular métricas: {str(e)}")
+        
+        elif not fix:
+            click.echo(f"\n💡 Para corrigir automaticamente, use: --fix")
+    
+    # Sugestões
+    click.echo(f"\n💡 SUGESTÕES:")
+    
+    dirs_without_metrics = len([d for d in subdirs if not list(d.glob("**/metrics_summary.json"))])
+    if dirs_without_metrics > 0:
+        click.echo(f"   • {dirs_without_metrics} diretórios sem métricas")
+        click.echo(f"   • Execute: te_eval_cli.py evaluate --predictions <arquivo> --output <dir>")
+    
+    dirs_without_actual_labels = 0
+    dirs_with_partial_labels = 0
+    
+    for subdir in subdirs:
+        pred_files = list(subdir.glob("**/predicted_*.csv"))
+        if pred_files:
+            try:
+                df = pd.read_csv(pred_files[0])
+                if 'Actual_Label' not in df.columns:
+                    dirs_without_actual_labels += 1
+                elif df['Actual_Label'].isna().any():
+                    dirs_with_partial_labels += 1
+            except:
+                pass
+    
+    if dirs_without_actual_labels > 0:
+        click.echo(f"   • {dirs_without_actual_labels} diretórios sem labels verdadeiros")
+        click.echo(f"   • Execute: te_eval_cli.py map-labels --fasta <arquivo> --predictions <csv>")
+    
+    if dirs_with_partial_labels > 0:
+        click.echo(f"   • {dirs_with_partial_labels} diretórios com labels parciais")
+        click.echo(f"   • Verifique o mapeamento automático de labels")
+    
+    # Comando sugerido para comparação
+    if len(subdirs) > 1:
+        click.echo(f"\n🔗 PARA COMPARAÇÃO:")
+        if dirs_without_metrics == 0:
+            click.echo(f"   te_eval_cli.py compare --results-dir {results_path}")
+        else:
+            click.echo(f"   te_eval_cli.py compare --results-dir {results_path} --auto-evaluate --include-incomplete")
+    
+    return issues, fixable_issues
 
 @cli.command('info')
 @click.pass_context
 def info(ctx):
     """Mostrar informações sobre a ferramenta e ambiente"""
     
-    click.echo("🔬 TE Evaluation Tool v5.0")
+    click.echo("🔬 TE Evaluation Tool v5.0.1")
     click.echo("=" * 40)
     
     # Informações do sistema
@@ -813,6 +1167,7 @@ def info(ctx):
     modules_status = {
         "EnvironmentManager": EnvironmentManager is not None,
         "TEMetricsEvaluator": TEMetricsEvaluator is not None,
+        "FASTALabelMapper": FASTALabelMapper is not None,
         "pandas": True,  # Já importado
         "click": True    # Já importado
     }
@@ -925,7 +1280,7 @@ def clean(ctx, target):
 def examples():
     """Mostrar exemplos de uso da ferramenta"""
     
-    click.echo("🚀 EXEMPLOS DE USO - TE Evaluation Tool v5.0")
+    click.echo("🚀 EXEMPLOS DE USO - TE Evaluation Tool v5.0.1")
     click.echo("=" * 50)
     
     examples = [
@@ -981,7 +1336,8 @@ def examples():
 
 @cli.command('quickstart')
 @click.option('--input', default='data/default_dataset.fasta', help='Arquivo FASTA para teste')
-def quickstart(input):
+@click.pass_context
+def quickstart(ctx, input):
     """Execução rápida para teste inicial"""
     
     click.echo("🚀 QUICKSTART - TE Evaluation Tool")

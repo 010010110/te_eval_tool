@@ -457,9 +457,9 @@ Esta ferramenta foi desenvolvida como parte da dissertação:
 
 **"Proposta de pipeline padronizada para testes de modelos baseados em inteligência artificial para a classificação de elementos transponíveis"**
 
-- **Autor:** Gabriel Carneiro de Arruda
+- **Autor:** Gabriel Carneiro de Arruda.
 - **Orientador:** Alceu de Souza Britto Jr.
-- **Coorientador:** Adriano Ferassa
+- **Coorientador:** Adriano Ferassa.
 - **Programa:** Mestrado em Computação Aplicada - UEPG
 - **Ano:** 2025
 
