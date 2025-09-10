@@ -1,15 +1,16 @@
-# env_manager.py - Gerenciador de ambientes por modelo
+# lib/env_manager.py - Gerenciador de ambientes por modelo
 import subprocess
 import sys
 from pathlib import Path
 import json
 import os
+import shutil
 
 class EnvironmentManager:
     """Gerencia ambientes virtuais específicos para cada modelo"""
     
     def __init__(self):
-        self.envs_dir = Path("model_envs")
+        self.envs_dir = Path("./src/model_envs")
         self.envs_dir.mkdir(exist_ok=True)
         
         # Configurações de ambientes por modelo
@@ -25,25 +26,18 @@ class EnvironmentManager:
                 ],
                 "python_version": "3.9"
             },
-            # # Preparado para futuros modelos
-            # "inpactor2": {
-            #     "env_name": "inpactor2_env", 
-            #     "requirements": [
-            #         "tensorflow>=2.8.0",
-            #         "numpy>=1.21.0",
-            #         "pandas>=1.3.0"
-            #     ],
-            #     "python_version": "3.8"
-            # },
-            # "terl": {
-            #     "env_name": "terl_env",
-            #     "requirements": [
-            #         "torch>=1.9.0",
-            #         "numpy>=1.21.0", 
-            #         "pandas>=1.3.0"
-            #     ],
-            #     "python_version": "3.9"
-            # }
+            "terl": {
+                "env_name": "terl_env",
+                "requirements": [
+                    "Cython",
+                    "numpy==1.20.3",
+                    "tensorflow==2.4.0",
+                    "matplotlib==3.4.3",
+                    "scikit-learn==0.24.2",
+                    "seaborn==0.11.2"
+                ],
+                "python_version": "3.8"
+            }
         }
     
     def create_environment(self, model_name):
@@ -60,7 +54,6 @@ class EnvironmentManager:
         # Remover ambiente existente se houver
         if env_path.exists():
             print(f"🧹 Removendo ambiente existente: {env_path}")
-            import shutil
             shutil.rmtree(env_path)
         
         # Criar novo ambiente
@@ -71,7 +64,7 @@ class EnvironmentManager:
         print(f"📦 Criando ambiente virtual com {python_cmd}...")
         subprocess.run([python_cmd, "-m", "venv", str(env_path)], check=True)
         
-        # Instalar dependências
+        # Instalar dependências (lógica unificada para todos os modelos)
         pip_path = env_path / "bin" / "pip"
         if not pip_path.exists():
             pip_path = env_path / "Scripts" / "pip.exe"  # Windows
@@ -132,7 +125,7 @@ class EnvironmentManager:
                     python_path = self.get_python_path(model_name)
                     result = subprocess.run([
                         python_path, "-c", 
-                        "import sys; import pkg_resources; print(f'Python: {sys.version.split()[0]}'); [print(f'{pkg.key}: {pkg.version}') for pkg in pkg_resources.working_set if pkg.key in ['numpy', 'pandas', 'scikit-learn', 'networkx']]"
+                        "import sys; import pkg_resources; print(f'Python: {sys.version.split()[0]}'); [print(f'{pkg.key}: {pkg.version}') for pkg in pkg_resources.working_set if pkg.key in ['numpy', 'pandas', 'scikit-learn', 'networkx', 'tensorflow', 'matplotlib', 'seaborn']]"
                     ], capture_output=True, text=True)
                     
                     if result.returncode == 0:
@@ -163,7 +156,6 @@ class EnvironmentManager:
         print("🧹 Removendo todos os ambientes...")
         
         if self.envs_dir.exists():
-            import shutil
             shutil.rmtree(self.envs_dir)
         
         print("✅ Ambientes removidos!")
