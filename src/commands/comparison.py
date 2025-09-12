@@ -236,8 +236,10 @@ def compare(ctx, results_dir, output, metric, auto_evaluate, include_incomplete,
             f.write(f"\nExecução: {row['run']}\n")
             f.write(f"Fonte: {row['source']}\n")
             f.write(f"Amostras: {row['total_samples']}\n")
-            if metric in row and pd.notna(row[metric]):
-                f.write(f"{metric}: {row[metric]:.4f}\n")
+            metric_cols = [col for col in row.index if col not in ["run", "source", "total_samples", "has_metrics", "has_predictions"]]
+            for col in metric_cols:
+                if pd.notna(row[col]):
+                    f.write(f"  {col}: {row[col]:.4f}\n")
     
     click.echo(f"\n💾 ARQUIVOS GERADOS:")
     click.echo(f"   📊 {comparison_file}")
