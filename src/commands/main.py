@@ -1,3 +1,4 @@
+# src/commands/main.py
 import click
 import subprocess
 import os
@@ -61,11 +62,11 @@ def validate(ctx, input_file, format_type, detailed, verbose):
     if not is_valid:
         sys.exit(1)
 
-# ==================== COMANDO RUN (REFATORADO) ====================
+# ==================== COMANDO RUN (REFATORADO E CORRIGIDO) ====================
 
 @click.command()
 @click.option('--model', default='classifyte', 
-              type=click.Choice(['classifyte', 'terl']), # Opcões atualizadas
+              type=click.Choice(['classifyte', 'terl']),
               help='Modelo a ser executado')
 @click.option('--input', 'input_file', required=True, type=click.Path(exists=True), 
               help='Arquivo FASTA de entrada')
@@ -73,8 +74,7 @@ def validate(ctx, input_file, format_type, detailed, verbose):
 @click.option('--algorithm', default='lcpnb', 
               type=click.Choice(['lcpnb', 'nllcpn']), 
               help='Algoritmo hierárquico (ClassifyTE)')
-@click.option('--model-file', default='ClassifyTE_combined.pkl', 
-              help='Arquivo do modelo (.pkl)')
+@click.option('--model-file', help='Arquivo do modelo (.pkl ou DS3)')
 @click.option('--node-file', default='node.txt', help='Arquivo de nós hierárquicos')
 @click.option('--skip-evaluation', is_flag=True, 
               help='Pular avaliação automática de métricas')
@@ -95,11 +95,14 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
     if model not in MODEL_RUNNERS:
         click.echo(f"❌ Modelo '{model}' não configurado.")
         sys.exit(1)
-    
-    # Seleciona a classe do executor a partir do mapeamento
+
+    if model == 'terl' and not model_file:
+        model_file = './src/models/TERL/Models/DS3'
+    elif model == 'classifyte' and not model_file:
+        model_file = 'ClassifyTE_combined.pkl'
+
     runner_class = MODEL_RUNNERS[model]
     
-    # Instancia e executa o executor correto
     try:
         if model == 'terl':
             runner = runner_class(
@@ -107,9 +110,10 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
                 input_file=input_file,
                 output_dir=output_dir,
                 model_file=model_file,
-                verbose=verbose
+                verbose=verbose,
+                skip_evaluation=skip_evaluation # Adicionado o parâmetro
             )
-        else: # ClassifyTE e futuros modelos que usarem todos os parâmetros
+        else:
             runner = runner_class(
                 python_path=EnvironmentManager().get_python_path(model),
                 input_file=input_file,

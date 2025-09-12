@@ -1,3 +1,4 @@
+# lib/models/classifyte_runner.py
 import click
 import subprocess
 import shutil
@@ -45,7 +46,7 @@ class ClassifyTERunner:
         # Verificar se arquivo de nós existe
         nodes_path = Path("./src/models/ClassifyTE/nodes") / self.node_file
         if not nodes_path.exists():
-            nodes_path = Path("nodes") / self.node_file
+            nodes_path = Path("./src/nodes") / self.node_file
             if not nodes_path.exists():
                 click.echo(f"❌ Arquivo de nós não encontrado: {self.node_file}")
                 return False
@@ -139,23 +140,33 @@ class ClassifyTERunner:
         
         final_file = output_path / "predicted_results.csv"
         shutil.copy(expected_result, final_file)
+        click.echo(f"📄 Arquivo de saída CSV salvo em: {final_file}")
         
         # Passo 4: Processar e mostrar resultados
         try:
-            df = pd.read_csv(final_file)
-            click.echo(f"\n📊 Resultados processados: {len(df)} sequências")
+            # Adicionar labels verdadeiros se a flag auto_label estiver ativa
+            if self.auto_label:
+                click.echo("📝 Mapeando rótulos do arquivo FASTA para avaliação...")
+                mapper = FASTALabelMapper()
+                # Novo: Usa o método dedicado para adicionar a coluna
+                predictions_df = mapper.add_actual_labels_to_predictions(final_file, self.input_file)
+            else:
+                predictions_df = pd.read_csv(final_file)
+
+
+            click.echo(f"\n📊 Resultados processados: {len(predictions_df)} sequências")
             
-            if "Predicted label" in df.columns:
-                predictions = df["Predicted label"].value_counts()
+            if "Predicted label" in predictions_df.columns:
+                predictions_counts = predictions_df["Predicted label"].value_counts()
                 click.echo("   Distribuição de predições:")
-                for pred, count in predictions.head().items():
+                for pred, count in predictions_counts.head().items():
                     click.echo(f"     {pred}: {count}")
-                if len(predictions) > 5:
-                    click.echo(f"     ... e mais {len(predictions) - 5} classes")
+                if len(predictions_counts) > 5:
+                    click.echo(f"     ... e mais {len(predictions_counts) - 5} classes")
             
             metadata = {
-                "total_sequences": len(df),
-                "model": "./src/models/ClassifyTE",
+                "total_sequences": len(predictions_df),
+                "model": "classifyte",
                 "algorithm": self.algorithm,
                 "model_file": self.model_file,
                 "node_file": self.node_file,
@@ -167,6 +178,9 @@ class ClassifyTERunner:
             with open(metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2)
             
+            click.echo(f"💾 Gerando arquivo de metadados...")
+            click.echo(f"📄 Arquivo de metadados salvo em: {metadata_file}")
+            
             if self.clean_temp:
                 click.echo("🧹 Limpando arquivos temporários...")
                 for temp_file in temp_files:
@@ -175,6 +189,30 @@ class ClassifyTERunner:
                             shutil.rmtree(temp_file)
                         else:
                             temp_file.unlink()
+
+            # Verificação e execução da avaliação (igual a do terl_runner)
+            if not self.skip_evaluation:
+                if 'Actual_Label' in predictions_df.columns and predictions_df['Actual_Label'].notna().any():
+                    click.echo("\n🔬 Avaliando métricas...")
+                    try:
+                        evaluator = TEMetricsEvaluator()
+                        metrics = evaluator.evaluate_predictions(final_file, output_path)
+
+                        click.echo("\n📈 MÉTRICAS PRINCIPAIS:")
+                        click.echo("=" * 50)
+                        click.echo(f"🎯 Acurácia: {metrics.get('accuracy', 0.0):.4f}")
+                        click.echo(f"🎯 Precisão (macro): {metrics.get('precision_macro', 0.0):.4f}")
+                        click.echo(f"🎯 Recall (macro): {metrics.get('recall_macro', 0.0):.4f}")
+                        click.echo(f"🎯 F1-Score (macro): {metrics.get('f1_macro', 0.0):.4f}")
+                        click.echo(f"🎯 Especificidade: {metrics.get('specificity_macro', 0.0):.4f}")
+                        click.echo(f"🎯 Youden's J: {metrics.get('youdens_j', 0.0):.4f}")
+                        
+                        click.echo("\n✅ Avaliação concluída com sucesso!")
+                    except Exception as e:
+                        click.echo(f"❌ Erro na avaliação: {str(e)}")
+                        return False
+                else:
+                    click.echo("\n⚠️ Aviso: Sem labels verdadeiros para avaliação. Use --auto-label ou certifique-se de que o arquivo de entrada está formatado corretamente.")
             
             return True
             

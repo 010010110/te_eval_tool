@@ -14,7 +14,7 @@ class FASTALabelMapper:
     >Gypsy-22_DPu-I|ClassI|LTR|Gypsy
     """
     
-    def __init__(self, tree_file="nodes/tree.txt"):
+    def __init__(self, tree_file="src/nodes/tree.txt"):
         self.tree_file = tree_file
         self.hierarchy_map = self._load_hierarchy()
         self.label_to_code = {label.lower(): code for code, label in self.hierarchy_map.items()}

@@ -16,7 +16,7 @@ class TEMetricsEvaluator:
     Implementa todas as métricas propostas na revisão de literatura
     """
     
-    def __init__(self, hierarchy_file="nodes/tree.txt"):
+    def __init__(self, hierarchy_file="src/nodes/tree.txt"):
         self.hierarchy = self._load_hierarchy(hierarchy_file)
         
     def _load_hierarchy(self, hierarchy_file):

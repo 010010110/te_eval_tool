@@ -14,7 +14,7 @@ except ImportError:
               help='Arquivo CSV de predições para adicionar labels')
 @click.option('--output', help='Arquivo de saída (opcional)')
 @click.option('--validate-only', is_flag=True, help='Apenas validar mapeamentos')
-@click.option('--tree-file', default='nodes/tree.txt', help='Arquivo de hierarquia')
+@click.option('--tree-file', default='src/nodes/tree.txt', help='Arquivo de hierarquia')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
 @click.pass_context
 def map_labels(ctx, fasta, predictions, output, validate_only, tree_file, verbose):

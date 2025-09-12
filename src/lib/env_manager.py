@@ -29,14 +29,13 @@ class EnvironmentManager:
             "terl": {
                 "env_name": "terl_env",
                 "requirements": [
-                    "Cython",
-                    "numpy==1.20.3",
-                    "tensorflow==2.4.0",
-                    "matplotlib==3.4.3",
-                    "scikit-learn==0.24.2",
-                    "seaborn==0.11.2"
+                    "numpy",
+                    "tensorflow~=2.16.1",
+                    "matplotlib",
+                    "scikit-learn",
+                    "seaborn"
                 ],
-                "python_version": "3.8"
+                "python_version": "3.12"
             }
         }
     

@@ -11,7 +11,7 @@ except ImportError:
 @click.option('--predictions', required=True, type=click.Path(exists=True), 
               help='Arquivo CSV com predições')
 @click.option('--output', 'output_dir', required=True, help='Diretório de saída para métricas')
-@click.option('--hierarchy', default='nodes/tree.txt', help='Arquivo de hierarquia')
+@click.option('--hierarchy', default='src/nodes/tree.txt', help='Arquivo de hierarquia')
 @click.option('--format', default='detailed', type=click.Choice(['summary', 'detailed', 'json']),
               help='Formato do relatório')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
