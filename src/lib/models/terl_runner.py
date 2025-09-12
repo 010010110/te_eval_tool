@@ -23,29 +23,54 @@ class TERLRunner:
         self.verbose = verbose
         self.skip_evaluation = skip_evaluation
         self.mapper = FASTALabelMapper(tree_file="./src/nodes/tree.txt")
+        self.original_headers = self._load_original_headers()
+
+    def _load_original_headers(self):
+        """Carrega os cabeçalhos originais do arquivo de entrada FASTA."""
+        headers = {}
+        with open(self.input_file, 'r') as f:
+            for line in f:
+                if line.startswith(">"):
+                    header_line = line[1:].strip() 
+                    parsed = self.mapper.parse_fasta_header(header_line)
+                    if parsed and parsed.get('seq_id'):
+                        headers[parsed['seq_id']] = header_line
+        return headers
 
     def _parse_terl_output_header(self, header):
         """
-        Extrai o ID da sequência e o rótulo da predição do cabeçalho de saída do TERL.
-        Exemplo: ">TERL_predicted_ATRAN|1.1_LTR-Retrotransposon/Gypsy"
+        Extrai o ID da sequência original e o rótulo da predição do cabeçalho de saída do TERL.
         """
         if not isinstance(header, str) or not header.startswith('>'):
             return None, None
         
-        header = header[1:] # Remove o '>'
+        # Remove o '>'
+        header = header[1:]
         
-        # Extrai o ID da sequência e o rótulo da predição
+        # A parte da predição é sempre a última, após o '/'
         parts = header.split('/', 1)
-        predicted_label = parts[-1].strip() # Limpa espaços em branco
+        raw_predicted_label = parts[-1].strip()
+
+        # O ID gerado pelo TERL pode ter diferentes formatos.
+        # Usa o método de mapeamento flexível do mapper para encontrar o ID original.
+        id_part_raw = parts[0].replace("TERL_predicted_", "").strip()
+
+        # Encontra o cabeçalho original para o ID
+        original_header_found = None
+        for orig_id, orig_header in self.original_headers.items():
+            if orig_id in id_part_raw or id_part_raw in orig_id:
+                original_header_found = orig_header
+                break
         
-        # O TERL_predicted pode ter nomes como "TERL_predicted_seq1_1"
-        seq_id_part = parts[0].replace("TERL_predicted_", "").strip()
+        # Fallback para o ID cru se o cabeçalho original não for encontrado no cache
+        if not original_header_found:
+            original_header_found = id_part_raw
 
-        # Tenta extrair o ID original
-        parsed_header = self.mapper.parse_fasta_header(seq_id_part)
-        sequence_id = parsed_header['seq_id'] if parsed_header else seq_id_part
-
-        return sequence_id, predicted_label
+        # Normaliza o rótulo de predição usando o mapper
+        parsed_predicted_label = self.mapper.parse_fasta_header(raw_predicted_label)
+        predicted_label = parsed_predicted_label['family_level'] if parsed_predicted_label.get('family_level') else raw_predicted_label
+        
+        return original_header_found, predicted_label
 
     def run(self):
         """Executa a classificação com terl_test.py"""
@@ -109,10 +134,10 @@ class TERLRunner:
             for line in f:
                 line = line.strip()
                 if line.startswith(">"):
-                    sequence_id, predicted_label = self._parse_terl_output_header(line)
-                    if sequence_id and predicted_label:
+                    original_header, predicted_label = self._parse_terl_output_header(line)
+                    if original_header and predicted_label:
                         predictions.append({
-                            "Sequence ID": sequence_id,
+                            "Sequence ID": original_header,
                             "Predicted label": predicted_label
                         })
 

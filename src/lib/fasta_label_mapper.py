@@ -105,6 +105,7 @@ class FASTALabelMapper:
             'gypsy': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'},
             'bel': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
             'pao': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
+            'erv': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'ERV'},
             
             # Retrotransposons - LINE
             'line': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'L1'},
@@ -151,7 +152,19 @@ class FASTALabelMapper:
         # Padrões para LTR genéricos
         if any(keyword in seq_lower for keyword in ['ltr', 'retro']):
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
-        
+
+        # Padrões para os formatos verbosos do TERL (nova adição)
+        if 'class i' in seq_lower and 'sine' in seq_lower:
+            return {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'}
+        if 'class i' in seq_lower and 'copia' in seq_lower:
+            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'}
+        if 'class ii' in seq_lower and 'tc1-mariner' in seq_lower:
+            return {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'}
+        if 'class i' in seq_lower and 'erv' in seq_lower:
+            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'ERV'} # Mapeamento ERV
+        if 'class i' in seq_lower and 'gypsy' in seq_lower:
+            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'}
+
         # Default para elementos não reconhecidos
         return {
             'class_level': 'Unknown',
@@ -216,7 +229,8 @@ class FASTALabelMapper:
             'gypsy': '1.1.2',       # Gypsy
             'belpao': '1.1.3',      # Bel-Pao
             'bel': '1.1.3',         # Bel-Pao
-            'pao': '1.1.3',         # Bel-Pao
+            'pao': '1.1.3',         # Pao
+            'erv': '1.1.4',         # ERV
             
             # DIRS
             'dirs': '1.2',          # DIRS
@@ -364,15 +378,9 @@ class FASTALabelMapper:
     
     def add_actual_labels_to_predictions(self, predictions_csv, fasta_file, output_csv=None):
         """
-        Adiciona coluna Actual_Label ao arquivo de predições baseado no FASTA
-        
-        Args:
-            predictions_csv: Arquivo CSV com predições do ClassifyTE
-            fasta_file: Arquivo FASTA original
-            output_csv: Arquivo de saída (opcional, sobrescreve original se None)
-            
-        Returns:
-            DataFrame com Actual_Label adicionado
+        Adiciona coluna Actual_Label ao arquivo de predições baseado no FASTA.
+        Corrigido para usar a lógica de inferência de nomes no campo 'Sequence ID'
+        do CSV de predições, o que o torna mais robusto para a saída do TERL.
         """
         
         # Carregar predições
@@ -381,8 +389,7 @@ class FASTALabelMapper:
         # Processar FASTA para obter mapeamentos
         mappings_df = self.process_fasta_file(fasta_file)
         
-        # Criar dicionário de mapeamento seq_id -> código hierárquico
-        # Tentar diferentes estratégias de matching de IDs
+        # Criar dicionário de mapeamento seq_id -> código/label hierárquico
         id_to_code = {}
         id_to_label = {}
         
@@ -392,49 +399,31 @@ class FASTALabelMapper:
             label = mapping_row['hierarchical_label']
             
             if pd.notna(code):
-                # Mapeamento direto
                 id_to_code[seq_id] = code
                 id_to_label[seq_id] = label
-                
-                # Mapeamento sem espaços
-                id_to_code[seq_id.strip()] = code
-                id_to_label[seq_id.strip()] = label
-                
-                # Mapeamento só da primeira parte (antes de espaço ou _)
-                base_id = seq_id.split()[0].split('_')[0]
-                id_to_code[base_id] = code
-                id_to_label[base_id] = label
         
-        # Mapear Sequence ID para código/label com estratégias flexíveis
-        def flexible_mapping(seq_id, mapping_dict):
-            """Tenta várias estratégias para mapear ID"""
-            if seq_id in mapping_dict:
-                return mapping_dict[seq_id]
+        # Assegurar que as colunas existem antes de tentar acessá-las
+        if 'Sequence ID' not in predictions_df.columns:
+            print("❌ Coluna 'Sequence ID' não encontrada no arquivo de predição.")
+            return predictions_df
             
-            # Tentar sem espaços
-            clean_id = seq_id.strip()
-            if clean_id in mapping_dict:
-                return mapping_dict[clean_id]
-            
-            # Tentar primeira parte antes de espaço
-            base_id = seq_id.split()[0] if ' ' in seq_id else seq_id
-            if base_id in mapping_dict:
-                return mapping_dict[base_id]
-            
-            # Tentar primeira parte antes de _
-            base_id = seq_id.split('_')[0] if '_' in seq_id else seq_id
-            if base_id in mapping_dict:
-                return mapping_dict[base_id]
-            
-            return None
+        predictions_df['Actual_Code'] = None
+        predictions_df['Actual_Label'] = None
         
-        predictions_df['Actual_Code'] = predictions_df['Sequence ID'].apply(
-            lambda x: flexible_mapping(x, id_to_code)
-        )
-        predictions_df['Actual_Label'] = predictions_df['Sequence ID'].apply(
-            lambda x: flexible_mapping(x, id_to_label)
-        )
-        
+        # Iterar sobre as linhas do CSV de predição e inferir o rótulo verdadeiro
+        # usando a lógica de inferência de nomes
+        for index, row in predictions_df.iterrows():
+            seq_id = row['Sequence ID']
+            parsed_header = self.parse_fasta_header(seq_id)
+            inferred_label = parsed_header['family_level']
+            
+            # Buscar o código e o rótulo hierárquico correspondente
+            if inferred_label and inferred_label != 'Unknown':
+                hierarchical_code = self.map_to_hierarchical_code({'family_level': inferred_label, 'order_level': parsed_header['order_level'], 'class_level': parsed_header['class_level']})
+                if hierarchical_code:
+                    predictions_df.loc[index, 'Actual_Code'] = hierarchical_code
+                    predictions_df.loc[index, 'Actual_Label'] = self.hierarchy_map.get(hierarchical_code, inferred_label)
+
         # Estatísticas de mapeamento
         successful_mappings = predictions_df['Actual_Code'].notna().sum()
         total_sequences = len(predictions_df)
