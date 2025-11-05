@@ -1,9 +1,0 @@
-{
-  "total_sequences": 7754,
-  "model": "classifyte",
-  "algorithm": "lcpnb",
-  "model_file": "ClassifyTE_combined.pkl",
-  "node_file": "node.txt",
-  "features_generated": true,
-  "python_environment": "/home/sheep/projects/te_eval_tool/model_envs/classifyte_env/bin/python"
-}
