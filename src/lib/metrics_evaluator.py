@@ -4,7 +4,9 @@ import pandas as pd
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     confusion_matrix, roc_auc_score, average_precision_score,
-    classification_report
+    classification_report,
+    cohen_kappa_score, 
+    matthews_corrcoef
 )
 from sklearn.preprocessing import label_binarize
 import json
@@ -98,7 +100,13 @@ class TEMetricsEvaluator:
         metrics["specificity_macro"] = np.mean(specificity_scores)
         metrics["youdens_j"] = metrics["recall_macro"] + metrics["specificity_macro"] - 1
         
-        # 7. auROC e mAP (se possível)
+        # 7. Coeficiente Kappa de Cohen
+        metrics["cohens_kappa"] = cohen_kappa_score(y_true, y_pred)
+        
+        # 8. Coeficiente de Correlação de Matthews (MCC)
+        metrics["matthews_corrcoef"] = matthews_corrcoef(y_true, y_pred)
+
+        # 9. auROC e mAP (se possível)
         try:
             unique_labels = np.unique(np.concatenate([y_true, y_pred]))
             if len(unique_labels) > 2:
@@ -138,16 +146,29 @@ class TEMetricsEvaluator:
             metrics["auroc_macro"] = "not_available"
             metrics["map_macro"] = "not_available"
         
-        # 8. Métricas por classe
+        # 10. Métricas por classe
         class_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
         metrics["per_class_metrics"] = class_report
         
-        # 9. Métricas hierárquicas (se hierarquia disponível)
+        # 11. Métrica de Consistência/Diversidade (Desvio Padrão do F1-score por Classe) (NOVA)
+        f1_scores_per_class = []
+        for class_name, class_data in class_report.items():
+            # Excluir as chaves de resumo macro, weighted, e accuracy
+            if isinstance(class_data, dict) and 'f1-score' in class_data and class_name not in ['accuracy', 'macro avg', 'weighted avg']:
+                f1_scores_per_class.append(class_data['f1-score'])
+        
+        if f1_scores_per_class:
+            # Calcular o desvio padrão dos F1-scores por classe
+            metrics["std_f1_per_class"] = np.std(f1_scores_per_class)
+        else:
+            metrics["std_f1_per_class"] = 0.0
+        
+        # 12. Métricas hierárquicas (se hierarquia disponível)
         if self.hierarchy:
             hierarchical_metrics = self._calculate_hierarchical_metrics(y_true, y_pred)
             metrics.update(hierarchical_metrics)
         
-        # 10. Estatísticas gerais
+        # 13. Estatísticas gerais
         metrics["total_samples"] = len(y_true)
         metrics["num_classes"] = len(np.unique(y_true))
         metrics["num_predicted_classes"] = len(np.unique(y_pred))
@@ -301,7 +322,7 @@ class TEMetricsEvaluator:
         with open(metrics_file, 'w') as f:
             json.dump(json_metrics, f, indent=2)
         
-        # Salvar resumo das métricas principais
+        # Salvar resumo das métricas principais (INCLUINDO AS NOVAS)
         summary = {
             "accuracy": json_metrics.get("accuracy", 0.0),
             "precision_macro": json_metrics.get("precision_macro", 0.0),
@@ -309,6 +330,9 @@ class TEMetricsEvaluator:
             "f1_macro": json_metrics.get("f1_macro", 0.0),
             "specificity_macro": json_metrics.get("specificity_macro", 0.0),
             "youdens_j": json_metrics.get("youdens_j", 0.0),
+            "cohens_kappa": json_metrics.get("cohens_kappa", 0.0),
+            "matthews_corrcoef": json_metrics.get("matthews_corrcoef", 0.0),
+            "std_f1_per_class": json_metrics.get("std_f1_per_class", 0.0),
             "hierarchical_f1": json_metrics.get("hierarchical_f1", "not_available"),
             "total_samples": json_metrics.get("total_samples", 0),
             "num_classes": json_metrics.get("num_classes", 0)
@@ -336,6 +360,7 @@ class TEMetricsEvaluator:
             f.write(f"Número de classes: {metrics.get('num_classes', 'N/A')}\n")
             f.write(f"Acurácia geral: {metrics.get('accuracy', 0.0):.4f}\n")
             f.write(f"F1-Score (macro): {metrics.get('f1_macro', 0.0):.4f}\n")
+            f.write(f"MCC (Matthews): {metrics.get('matthews_corrcoef', 0.0):.4f}\n")
             
             if metrics.get('hierarchical_f1') != 'not_available':
                 f.write(f"F1-Score hierárquico: {metrics.get('hierarchical_f1', 0.0):.4f}\n")
@@ -357,9 +382,13 @@ class TEMetricsEvaluator:
             f.write(f"F1-Score (weighted): {metrics.get('f1_weighted', 0.0):.4f}\n")
             f.write(f"Especificidade (macro): {metrics.get('specificity_macro', 0.0):.4f}\n\n")
             
-            # Métricas avançadas
-            f.write("MÉTRICAS AVANÇADAS\n")
+            # Métricas robustas e avançadas (NOVAS INCLUSÕES)
+            f.write("MÉTRICAS ROBUSTAS E AVANÇADAS\n")
             f.write("-" * 40 + "\n")
+            
+            f.write(f"Coeficiente Kappa de Cohen: {metrics.get('cohens_kappa', 0.0):.4f}\n")
+            f.write(f"Coef. Correlação de Matthews (MCC): {metrics.get('matthews_corrcoef', 0.0):.4f}\n")
+            f.write(f"Desvio Padrão F1 por Classe: {metrics.get('std_f1_per_class', 0.0):.4f} (Consistência)\n")
             
             auroc = metrics.get('auroc_macro', 'not_available')
             if auroc != 'not_available':
@@ -369,11 +398,9 @@ class TEMetricsEvaluator:
             
             map_score = metrics.get('map_macro', 'not_available')
             if map_score != 'not_available':
-                f.write(f"mAP (macro): {map_score:.4f}\n")
+                f.write(f"mAP (macro): {map_score:.4f}\n\n")
             else:
-                f.write("mAP (macro): Não disponível\n")
-            
-            f.write(f"Youden's J Statistic: {metrics.get('youdens_j', 0.0):.4f}\n\n")
+                f.write("mAP (macro): Não disponível\n\n")
             
             # Métricas hierárquicas
             if metrics.get('hierarchical_f1') != 'not_available':
