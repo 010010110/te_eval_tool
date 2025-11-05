@@ -1,8 +1,7 @@
 .venv
 model_envs
-models/classifyte_models
 default_dataset
-test*
-__pycache__
-results
+test*/*
+test*.*
 temp*
+__pycache__
