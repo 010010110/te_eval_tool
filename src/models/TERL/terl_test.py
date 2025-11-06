@@ -169,35 +169,50 @@ with tf.compat.v1.Session(graph=tf.Graph()) as sess:
 
         # ****** CLASSIFICATION *******
         start = time()
-        predictions = np.array([], dtype=np.uint8)
+        
+        # Variáveis para armazenar o índice da predição e o score de confiança
+        predictions_indices = np.array([], dtype=np.uint8)
+        predictions_scores = np.array([], dtype=np.float32) 
+        
         for batch in range(0, test_size, int(options.batch)):
             x_batch = x[batch : batch + int(options.batch)]
 
             pre_xo = sess.run('one_hot_x:0', feed_dict={'pre_x:0': x_batch})
             x_batch = pre_xo.reshape(x_batch.shape[0], max_len, vocab_size, 1)
 
-            predictions = np.concatenate([
-                predictions,
-                sess.run(
-                    'prediction:0',
-                    feed_dict={
-                        'x_input:0': x_batch,
-                        'is_training:0': False
-                    }
-                )
-            ])
+            # MODIFICAÇÃO CHAVE: Usando 'scores:0' como o tensor de probabilidades
+            pred_index, probs = sess.run(
+                ['prediction:0', 'scores:0'], 
+                feed_dict={
+                    'x_input:0': x_batch,
+                    'is_training:0': False
+                }
+            )
+            
+            # Calcular o score de confiança (a probabilidade máxima)
+            batch_scores = np.max(probs, axis=1) 
+            
+            predictions_indices = np.concatenate([predictions_indices, pred_index])
+            predictions_scores = np.concatenate([predictions_scores, batch_scores]) # Armazenar scores
+            
         if options.verbose: print('CLASSIFICATION TIME: ', time() - start)
 
         # ******* WRITE RESULTS *******
         start = time()
         out = ''
         x = list(x)
-        for i, pred in enumerate(predictions):
-            if classes[pred] not in classification:
-                classification[classes[pred]] = [classes[pred], 0]
+        
+        for i, pred_index in enumerate(predictions_indices): 
+            predicted_label = classes[pred_index]
+            confidence_score = predictions_scores[i] # Obter o score
+            
+            if predicted_label not in classification:
+                classification[predicted_label] = [predicted_label, 0]
                 
-            classification[classes[pred]][1] += 1
-            out += '>' + classification[classes[pred]][0] + '\t' + str(classification[classes[pred]][1]) + '\n'
+            classification[predicted_label][1] += 1
+            
+            # Formato de saída: >[PathLabel]||[ConfidenceScore]\t[Count]
+            out += '>' + classification[predicted_label][0] + f"||{confidence_score:.6f}" + '\t' + str(classification[predicted_label][1]) + '\n'
             out += seqs[i]
 
         if options.verbose:

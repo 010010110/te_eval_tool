@@ -98,7 +98,7 @@ class FASTALabelMapper:
         
         seq_lower = seq_name.lower()
         
-        # Padrões de reconhecimento baseados em nomes conhecidos
+        # Padrões de reconhecimento baseados em nomes conhecidos (Dicionário)
         classification_patterns = {
             # Retrotransposons - LTR
             'copia': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'},
@@ -124,7 +124,10 @@ class FASTALabelMapper:
             'tc1': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
             'mariner': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
             'mutator': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Mutator'},
+            'merlin': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Merlin'},
+            'transib': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Transib'},
             'cacta': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'CACTA'},
+            'p': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'P'},
             'piggyb': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PiggyBac'},
             'harbinger': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
             'pif': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
@@ -134,7 +137,7 @@ class FASTALabelMapper:
             'dtt': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'},     # DTT pode ser hAT
         }
         
-        # Buscar padrões no nome
+        # Buscar padrões no nome (do dicionário)
         for pattern, classification in classification_patterns.items():
             if pattern in seq_lower:
                 return classification
@@ -153,16 +156,17 @@ class FASTALabelMapper:
         if any(keyword in seq_lower for keyword in ['ltr', 'retro']):
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
 
-        # Padrões para os formatos verbosos do TERL (nova adição)
+        # CORREÇÃO DE SINTAXE: Padrões verbosos do TERL (usando if/elif)
+        # Estes são usados para tentar inferir a classificação a partir dos rótulos de saída do TERL
         if 'class i' in seq_lower and 'sine' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'}
-        if 'class i' in seq_lower and 'copia' in seq_lower:
+        elif 'class i' in seq_lower and 'copia' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'}
-        if 'class ii' in seq_lower and 'tc1-mariner' in seq_lower:
+        elif 'class ii' in seq_lower and 'tc1-mariner' in seq_lower:
             return {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'}
-        if 'class i' in seq_lower and 'erv' in seq_lower:
-            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'ERV'} # Mapeamento ERV
-        if 'class i' in seq_lower and 'gypsy' in seq_lower:
+        elif 'class i' in seq_lower and 'erv' in seq_lower:
+            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'ERV'}
+        elif 'class i' in seq_lower and 'gypsy' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'}
 
         # Default para elementos não reconhecidos
@@ -172,6 +176,57 @@ class FASTALabelMapper:
             'family_level': 'Unknown'
         }
     
+    # NOVO MÉTODO OBRIGATÓRIO PARA O TERL_RUNNER
+    def get_code_from_label(self, label):
+        """
+        Retorna o código hierárquico (ex: "1.1.1") para um rótulo (label) fornecido.
+        Necessário para inferir Predicted_Code do modelo TERL (classificador plano).
+        """
+        if not label:
+            return None
+            
+        normalized_label = self._normalize_label(label)
+
+        # Mapeamentos especiais (copiado de map_to_hierarchical_code para reuso)
+        special_mappings = {
+            # Classes principais
+            'classi': '1', 'classii': '2', 'retrotransposon': '1', 'dnatransposon': '2', 'dna': '2',
+            # Orders LTR
+            'ltr': '1.1',
+            # Families LTR
+            'copia': '1.1.1', 'gypsy': '1.1.2', 'belpao': '1.1.3', 'bel': '1.1.3', 'pao': '1.1.3', 'erv': '1.1.4',
+            # DIRS
+            'dirs': '1.2',
+            # LINE
+            'line': '1.4', 'l1': '1.4.4', 'rte': '1.4.2', 'jockey': '1.4.3', 'r2': '1.4.1', 'i': '1.4.5',
+            # SINE
+            'sine': '1.5', 'trna': '1.5.1', '7sl': '1.5.2', '5s': '1.5.3',
+            # DNA Transposons
+            'subclassi': '2.1', 'tir': '2.1.1', 'tirs': '2.1.1',
+            # TIR Families
+            'tc1mariner': '2.1.1.1', 'tc1': '2.1.1.1', 'mariner': '2.1.1.1', 'hat': '2.1.1.2', 'mutator': '2.1.1.3',
+            'merlin': '2.1.1.4', 'transib': '2.1.1.5', 'p': '2.1.1.6', 'piggybac': '2.1.1.7', 'piggyb': '2.1.1.7',
+            'pifharbinger': '2.1.1.8', 'harbinger': '2.1.1.8', 'pif': '2.1.1.8', 'cacta': '2.1.1.9',
+            # Elementos específicos
+            'atran': '1.1.1', 'dtt': '2.1.1.2', 'trep': '1.1.2',
+        }
+
+        # 1. Tentar mapeamento exato
+        if normalized_label in self.label_to_code:
+            return self.label_to_code[normalized_label]
+            
+        # 2. Tentar mapeamentos especiais
+        if normalized_label in special_mappings:
+            return special_mappings[normalized_label]
+            
+        # 3. Tentar busca parcial (usando o método auxiliar existente)
+        code = self._find_code_for_label(normalized_label)
+        if code:
+            return code
+        
+        return None
+    # FIM DO NOVO MÉTODO
+
     def map_to_hierarchical_code(self, parsed_header):
         """
         Mapeia header parseado para código hierárquico

@@ -48,6 +48,7 @@ def evaluate_model(test_data, parent_classifiers, algorithm, h):
             c = lcpnb.lcpnb(h)
         elif algorithm == "nllcpn":
             c = nllcpn.nllcpn(h)
+        # c.classify retorna a lista de códigos hierárquicos (o path)
         predicted = c.classify(test_data.iloc[i].values.reshape(1, -1), parent_classifiers)
         labels_evaluate.append(predicted)
     return labels_evaluate
@@ -100,16 +101,28 @@ if __name__ == '__main__':
     with open(os.path.join(outputs_filepath, outputs_filename), 'w') as f_csv, \
          open(os.path.join(outputs_filepath, outputs_txt), 'w') as f_txt:
 
-        f_csv.write("Sequence ID,Predicted label\n")
+        # Novo cabeçalho CSV padronizado
+        f_csv.write("Sequence ID,Predicted label,Final_Confidence_Score,Predicted_Code,Predicted_Path_Codes\n")
         f_txt.write("Prediction Results\n")
 
         for count, k in enumerate(hier_label):
             name = seq_names[count].strip()
-            seq_id = name.split(" ")[0]
+            
+            # 1. Obter o ID antes de qualquer espaço (lógica original)
+            temp_id = name.split(" ")[0]
 
+            # 2. PADRONIZAÇÃO: Remover tudo após o primeiro '|' (mantendo o ID puro)
+            seq_id = temp_id.split("|")[0]
+            
             predicted_label_code = k[-1] if k else ""
             predicted_label_name = getLabel(content, str(predicted_label_code))
+            
+            # Novo: Formato Predicted_Path_Codes
+            predicted_path_codes = ",".join(k) if k else ""
 
+            # Novo: Placeholder para Confidence Score (N/A)
+            final_confidence_score = "N/A" 
+            
             print(f"Prediction for TE sequence of ID: {name}")
             f_txt.write(f"Prediction for TE sequence of ID: {name}\n")
 
@@ -118,10 +131,13 @@ if __name__ == '__main__':
                 print(f"Predicted level {i} : {label}")
                 f_txt.write(f"Predicted level {i} : {label}\n")
 
-            f_txt.write(f"Final label of TE sequence is {predicted_label_name}\n\n")
+            f_txt.write(f"Final label of TE sequence is {predicted_label_name}\n")
+            f_txt.write(f"Predicted Code: {predicted_label_code}\n") 
+            f_txt.write(f"Predicted Path Codes: {predicted_path_codes}\n\n") 
             f_txt.write("###############################################################\n\n")
 
-            f_csv.write(f"{seq_id},{predicted_label_name}\n")
+            # MODIFICAÇÃO CHAVE: Envolver predicted_path_codes em aspas duplas (") para escapamento
+            f_csv.write(f"{seq_id},{predicted_label_name},{final_confidence_score},{predicted_label_code},\"{predicted_path_codes}\"\n")
             print("\n###############################################################\n")
 
     elapsed_time = time.time() - start_time
