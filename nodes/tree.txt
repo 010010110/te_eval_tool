@@ -26,3 +26,6 @@
 2.1.1.7,PiggyBac
 2.1.1.8,PIF-Harbinger
 2.1.1.9,CACTA
+2.3,Crypton
+4.1,rRNA
+4.3,scRNA

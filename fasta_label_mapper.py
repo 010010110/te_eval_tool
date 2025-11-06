@@ -2,554 +2,332 @@
 import pandas as pd
 from pathlib import Path
 import re
+import sys 
+import json 
 
 class FASTALabelMapper:
     """
-    Mapeia headers FASTA para códigos hierárquicos usando tree.txt
-    
-    Suporta padrões como:
-    >5S|ClassI|SINE|5S
-    >AACOPIA1_I|ClassI|LTR|Copia
-    >hAT-9_XT|ClassII|TIR|hAT
-    >Gypsy-22_DPu-I|ClassI|LTR|Gypsy
+    Mapeia headers FASTA para códigos hierárquicos usando arquivos de configuração externos.
     """
     
-    def __init__(self, tree_file="nodes/tree.txt"):
-        self.tree_file = tree_file
-        self.hierarchy_map = self._load_hierarchy()
+    def __init__(self, base_dir=None, tree_file="nodes/tree.txt", config_file="mapper_config.json"):
+        """
+        Inicializa o mapper, carregando a hierarquia e as regras de inferência.
+        """
+        if base_dir:
+            base_path = Path(base_dir).resolve()
+        else:
+            try:
+                script_path = Path(__file__).resolve()
+                base_path = script_path.parent 
+                if not (base_path / "nodes").exists():
+                    base_path = Path.cwd() 
+            except NameError:
+                 base_path = Path.cwd()
+
+        self.project_root = base_path 
+
+        # 1. Carregar tree.txt
+        tree_path = Path(tree_file)
+        self.tree_file = tree_path if tree_path.is_absolute() else (self.project_root / tree_file).resolve()
+        self.hierarchy_map = self._load_hierarchy() 
         self.label_to_code = {label.lower(): code for code, label in self.hierarchy_map.items()}
         
+        # 2. Carregar mapper_config.json
+        config_path = Path(config_file)
+        self.config_file = config_path if config_path.is_absolute() else (self.project_root / config_file).resolve()
+        self._load_config() 
+
     def _load_hierarchy(self):
-        """Carrega mapeamento código -> label do tree.txt"""
+        """Carrega o mapeamento código -> label do arquivo tree.txt."""
         hierarchy = {}
-        
         try:
             with open(self.tree_file, 'r') as f:
                 for line in f:
                     if ',' in line:
                         code, label = line.strip().split(',', 1)
                         hierarchy[code.strip()] = label.strip()
+            print(f"    - Hierarquia 'tree.txt' carregada de: {self.tree_file}")
         except FileNotFoundError:
-            print(f"⚠️ Arquivo tree.txt não encontrado: {self.tree_file}")
-        
+            print(f"⚠️  Arquivo de hierarquia não encontrado em: {self.tree_file}.")
+            print("   O mapeamento para códigos numéricos pode ser limitado.")
         return hierarchy
+        
+    def _load_config(self):
+        """Carrega as regras de mapeamento do arquivo JSON."""
+        try:
+            with open(self.config_file, 'r') as f:
+                config = json.load(f)
+            self.special_mappings = config.get("special_mappings", {})
+            self.inference_patterns = config.get("inference_patterns", {})
+            print(f"    - Regras de inferência carregadas de: {self.config_file}")
+        except FileNotFoundError:
+            print(f"⚠️  Arquivo de configuração '{self.config_file}' não encontrado.")
+            self.special_mappings = {}
+            self.inference_patterns = {}
+        except json.JSONDecodeError:
+            print(f"❌ Erro: O arquivo '{self.config_file}' contém um JSON inválido.")
+            sys.exit(1)
     
     def parse_fasta_header(self, header):
         """
-        Extrai informações estruturadas do header FASTA
-        
-        Suporta múltiplos formatos:
-        - >5S|ClassI|SINE|5S
-        - >AACOPIA1_I|ClassI|LTR|Copia  
-        - >ATRAN (nome simples)
-        - >BEL-7_Adi-I (família no nome)
-        - >hAT-236_Ami (família no nome)
-        
-        Returns:
-            dict com seq_id, class_level, order_level, family_level
+        Extrai informações estruturadas do header FASTA.
+        Suporta múltiplos formatos, como Delimitado por '|' ou '#'.
         """
+        clean_header = header.lstrip('>')
         
-        # Remover '>' se presente
-        if header.startswith('>'):
-            header = header[1:]
-        
-        # Dividir por '|'
-        parts = header.split('|')
-        
-        if len(parts) >= 4:
-            # Formato padrão: seq|class|order|family
-            return {
-                'seq_id': parts[0],
-                'class_level': parts[1],
-                'order_level': parts[2],
-                'family_level': parts[3]
-            }
-        elif len(parts) >= 3:
-            # Formato parcial: seq|class|order
-            return {
-                'seq_id': parts[0],
-                'class_level': parts[1],
-                'order_level': parts[2],
-                'family_level': parts[2]
-            }
-        else:
-            # Formato simples: apenas nome da sequência
-            # Tentar extrair informações do nome
+        # Estratégia 1: Tentar dividir por '#' 
+        if '#' in clean_header:
+            parts = clean_header.split('#')
             seq_id = parts[0]
-            inferred = self._infer_classification_from_name(seq_id)
+            classification_part = parts[1].split()[0] 
             
-            return {
-                'seq_id': seq_id,
-                'class_level': inferred['class_level'],
-                'order_level': inferred['order_level'],
-                'family_level': inferred['family_level']
-            }
-    
+            if classification_part and 'unknown' not in classification_part.lower():
+                class_parts = classification_part.split('/')
+                return {
+                    'seq_id': seq_id,
+                    'class_level': class_parts[0] if len(class_parts) > 0 else 'Unknown',
+                    'order_level': class_parts[1] if len(class_parts) > 1 else class_parts[0],
+                    'family_level': class_parts[-1]
+                }
+
+        # Estratégia 2: Tentar dividir por '|'
+        parts = clean_header.split('|')
+        if len(parts) >= 4:
+            return {'seq_id': parts[0], 'class_level': parts[1], 'order_level': parts[2], 'family_level': parts[3]}
+        if len(parts) == 3:
+            return {'seq_id': parts[0], 'class_level': parts[1], 'order_level': parts[2], 'family_level': parts[2]}
+            
+        # Estratégia 3: Capturar o formato [ID]|[CODE]
+        if len(parts) == 2 and re.match(r'^[0-9\.]+$', parts[1]):
+            code = parts[1]
+            label = self.hierarchy_map.get(code, 'Unknown') 
+            if label != 'Unknown':
+                return {'seq_id': parts[0], 'class_level': label, 'order_level': label, 'family_level': label}
+            
+        # Estratégia 4: Inferir do nome (fallback)
+        seq_id = clean_header.split()[0].split('|')[0].split('#')[0]
+        inferred = self._infer_classification_from_name(seq_id)
+        return {'seq_id': seq_id, **inferred}
+
     def _infer_classification_from_name(self, seq_name):
         """
-        Infere classificação a partir do nome da sequência
-        
-        Args:
-            seq_name: Nome da sequência (ex: "ATRAN", "BEL-7_Adi-I", "hAT-236_Ami")
-            
-        Returns:
-            dict com classificação inferida
+        Infere a classificação a partir do nome da sequência usando padrões do config.
         """
-        
         seq_lower = seq_name.lower()
         
-        # Padrões de reconhecimento baseados em nomes conhecidos
-        classification_patterns = {
-            # Retrotransposons - LTR
-            'copia': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'},
-            'gypsy': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'},
-            'bel': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
-            'pao': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
-            
-            # Retrotransposons - LINE
-            'line': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'L1'},
-            'l1': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'L1'},
-            'rte': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'RTE'},
-            'jockey': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'Jockey'},
-            
-            # Retrotransposons - SINE
-            'sine': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'},
-            '5s': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': '5S'},
-            '7sl': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': '7SL'},
-            'trna': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'},
-            
-            # DNA Transposons - TIR
-            'hat': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'},
-            'tc1': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
-            'mariner': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
-            'mutator': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Mutator'},
-            'cacta': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'CACTA'},
-            'piggyb': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PiggyBac'},
-            'harbinger': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
-            'pif': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
-            
-            # Elementos específicos
-            'atran': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'},  # ATRAN é um Copia
-            'dtt': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'},     # DTT pode ser hAT
-        }
-        
-        # Buscar padrões no nome
-        for pattern, classification in classification_patterns.items():
+        # Usa os padrões carregados do JSON
+        for pattern, classification in self.inference_patterns.items():
+            if re.search(r'\b' + re.escape(pattern) + r'\b', seq_lower):
+                return classification
+        for pattern, classification in self.inference_patterns.items():
             if pattern in seq_lower:
                 return classification
-        
-        # Padrões baseados em prefixos/sufixos
-        if seq_lower.startswith('ltr'):
-            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
-        
-        if 'hat' in seq_lower or seq_lower.startswith('hat'):
-            return {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'}
-        
-        if 'bel' in seq_lower:
-            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'}
-        
-        # Padrões para LTR genéricos
-        if any(keyword in seq_lower for keyword in ['ltr', 'retro']):
-            return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
-        
-        # Default para elementos não reconhecidos
-        return {
-            'class_level': 'Unknown',
-            'order_level': 'Unknown', 
-            'family_level': 'Unknown'
-        }
+
+        if 'dna' in seq_lower:
+             return {'class_level': 'ClassII', 'order_level': 'Unknown', 'family_level': 'Unknown'}
+
+        return {'class_level': 'Unknown', 'order_level': 'Unknown', 'family_level': 'Unknown'}
     
     def map_to_hierarchical_code(self, parsed_header):
         """
-        Mapeia header parseado para código hierárquico
-        
-        Args:
-            parsed_header: Resultado de parse_fasta_header()
-            
-        Returns:
-            Código hierárquico (ex: "1.1.1") ou None se não encontrado
+        Mapeia um header já processado para o código hierárquico correspondente.
         """
+        family_norm = self._normalize_label(parsed_header['family_level'])
+        order_norm = self._normalize_label(parsed_header['order_level'])
+        class_norm = self._normalize_label(parsed_header['class_level'])
         
-        class_level = parsed_header['class_level']
-        order_level = parsed_header['order_level'] 
-        family_level = parsed_header['family_level']
-        
-        # Estratégia de mapeamento hierárquico:
-        # 1. Tentar mapear o nível mais específico (family)
-        # 2. Se não encontrar, tentar order
-        # 3. Se não encontrar, tentar class
-        
-        # Normalizar nomes para busca
-        family_normalized = self._normalize_label(family_level)
-        order_normalized = self._normalize_label(order_level)
-        class_normalized = self._normalize_label(class_level)
-        
-        # 1. Tentar nível family primeiro (mais específico)
-        code = self._find_code_for_label(family_normalized)
-        if code:
-            return code
-            
-        # 2. Tentar nível order
-        code = self._find_code_for_label(order_normalized)
-        if code:
-            return code
-            
-        # 3. Tentar nível class
-        code = self._find_code_for_label(class_normalized)
-        if code:
-            return code
-        
-        # 4. Mapeamentos especiais para casos comuns (expandido)
-        special_mappings = {
-            # Classes principais
-            'classi': '1',           # ClassI -> Retrotransposon
-            'classii': '2',          # ClassII -> DNA transposon
-            'retrotransposon': '1',
-            'dnatransposon': '2',
-            'dna': '2',
-            
-            # Orders LTR
-            'ltr': '1.1',           # LTR
-            
-            # Families LTR
-            'copia': '1.1.1',       # Copia
-            'gypsy': '1.1.2',       # Gypsy
-            'belpao': '1.1.3',      # Bel-Pao
-            'bel': '1.1.3',         # Bel-Pao
-            'pao': '1.1.3',         # Bel-Pao
-            
-            # DIRS
-            'dirs': '1.2',          # DIRS
-            
-            # LINE
-            'line': '1.4',          # LINE
-            'l1': '1.4.4',          # L1
-            'rte': '1.4.2',         # RTE
-            'jockey': '1.4.3',      # Jockey
-            'r2': '1.4.1',          # R2
-            'i': '1.4.5',           # I
-            
-            # SINE
-            'sine': '1.5',          # SINE
-            'trna': '1.5.1',        # tRNA
-            '7sl': '1.5.2',         # 7SL
-            '5s': '1.5.3',          # 5S
-            
-            # DNA Transposons
-            'subclassi': '2.1',     # SubclassI
-            'tir': '2.1.1',         # TIRS
-            'tirs': '2.1.1',        # TIRS
-            
-            # TIR Families
-            'tc1mariner': '2.1.1.1', # Tc1-Mariner
-            'tc1': '2.1.1.1',       # Tc1-Mariner
-            'mariner': '2.1.1.1',   # Tc1-Mariner
-            'hat': '2.1.1.2',       # hAT
-            'mutator': '2.1.1.3',   # Mutator
-            'merlin': '2.1.1.4',    # Merlin
-            'transib': '2.1.1.5',   # Transib
-            'p': '2.1.1.6',         # P
-            'piggybac': '2.1.1.7',  # PiggyBac
-            'piggyb': '2.1.1.7',    # PiggyBac
-            'pifharbinger': '2.1.1.8', # PIF-Harbinger
-            'harbinger': '2.1.1.8', # PIF-Harbinger
-            'pif': '2.1.1.8',       # PIF-Harbinger
-            'cacta': '2.1.1.9',     # CACTA
-            
-            # Elementos específicos mencionados
-            'atran': '1.1.1',       # ATRAN é um Copia
-            'dtt': '2.1.1.2',       # DTT como hAT
-            'trep': '1.1.2',        # TREP pode ser Gypsy (comum em bancos de dados)
-        }
-        
-        # Tentar mapeamentos especiais
-        for label in [family_normalized, order_normalized, class_normalized]:
-            if label in special_mappings:
-                return special_mappings[label]
-        
+        # Usa os mapeamentos carregados do JSON
+        for label in [family_norm, order_norm, class_norm]:
+            if label in self.special_mappings:
+                return self.special_mappings[label]
+            code = self._find_code_for_label(label)
+            if code:
+                return code
         return None
     
     def _normalize_label(self, label):
-        """Normaliza label para busca (lowercase, sem caracteres especiais)"""
         if not label or label == 'Unknown':
             return ''
-        
-        # Converter para lowercase e remover caracteres especiais
-        normalized = re.sub(r'[^a-zA-Z0-9]', '', label.lower())
-        
-        # Mapeamentos de normalização específicos
-        normalization_map = {
-            'classi': 'classi',
-            'classii': 'classii', 
-            'class1': 'classi',
-            'class2': 'classii',
-            'retrotransposon': 'classi',
-            'dnatransposon': 'classii',
-            'dna': 'classii'
-        }
-        
-        return normalization_map.get(normalized, normalized)
+        return re.sub(r'[^a-zA-Z0-9]', '', label.lower())
     
     def _find_code_for_label(self, normalized_label):
-        """Encontra código para label normalizado"""
         if not normalized_label:
             return None
-            
-        # Busca exata
-        if normalized_label in self.label_to_code:
-            return self.label_to_code[normalized_label]
-        
-        # Busca parcial (label contém o termo)
-        for label, code in self.label_to_code.items():
-            if normalized_label in label or label in normalized_label:
-                return code
-        
-        return None
+        return self.label_to_code.get(normalized_label)
     
     def process_fasta_file(self, fasta_file, output_csv=None):
-        """
-        Processa arquivo FASTA completo e gera CSV com mapeamentos
-        
-        Args:
-            fasta_file: Caminho para arquivo FASTA
-            output_csv: Caminho para salvar CSV (opcional)
-            
-        Returns:
-            DataFrame com mapeamentos
-        """
-        
+        fasta_path = Path(fasta_file).resolve()
         mappings = []
-        
         try:
-            with open(fasta_file, 'r') as f:
+            with open(fasta_path, 'r') as f:
                 for line in f:
                     if line.startswith('>'):
                         header = line.strip()
-                        
-                        # Parsear header
                         parsed = self.parse_fasta_header(header)
-                        
-                        # Mapear para código hierárquico
                         hierarchical_code = self.map_to_hierarchical_code(parsed)
-                        
-                        # Obter label hierárquico
-                        hierarchical_label = self.hierarchy_map.get(hierarchical_code, 'Unknown') if hierarchical_code else 'Unknown'
-                        
-                        mapping = {
+                        hierarchical_label = self.hierarchy_map.get(str(hierarchical_code), 'Unknown') if hierarchical_code else 'Unknown'
+                        mappings.append({
                             'sequence_id': parsed['seq_id'],
                             'original_header': header,
                             'class_level': parsed['class_level'],
-                            'order_level': parsed['order_level'], 
+                            'order_level': parsed['order_level'],
                             'family_level': parsed['family_level'],
                             'hierarchical_code': hierarchical_code,
                             'hierarchical_label': hierarchical_label,
                             'mapping_success': hierarchical_code is not None
-                        }
-                        
-                        mappings.append(mapping)
-        
+                        })
         except FileNotFoundError:
-            print(f"❌ Arquivo FASTA não encontrado: {fasta_file}")
+            print(f"❌ Arquivo FASTA não encontrado em: {fasta_path}")
             return pd.DataFrame()
         
         df = pd.DataFrame(mappings)
-        
         if output_csv:
             output_path = Path(output_csv)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             df.to_csv(output_csv, index=False)
             print(f"📄 Mapeamentos salvos em: {output_csv}")
-        
         return df
-    
-    def add_actual_labels_to_predictions(self, predictions_csv, fasta_file, output_csv=None):
-        """
-        Adiciona coluna Actual_Label ao arquivo de predições baseado no FASTA
-        
-        Args:
-            predictions_csv: Arquivo CSV com predições do ClassifyTE
-            fasta_file: Arquivo FASTA original
-            output_csv: Arquivo de saída (opcional, sobrescreve original se None)
-            
-        Returns:
-            DataFrame com Actual_Label adicionado
-        """
-        
-        # Carregar predições
-        predictions_df = pd.read_csv(predictions_csv)
-        
-        # Processar FASTA para obter mapeamentos
-        mappings_df = self.process_fasta_file(fasta_file)
-        
-        # Criar dicionário de mapeamento seq_id -> código hierárquico
-        # Tentar diferentes estratégias de matching de IDs
-        id_to_code = {}
-        id_to_label = {}
-        
-        for _, mapping_row in mappings_df.iterrows():
-            seq_id = mapping_row['sequence_id']
-            code = mapping_row['hierarchical_code']
-            label = mapping_row['hierarchical_label']
-            
-            if pd.notna(code):
-                # Mapeamento direto
-                id_to_code[seq_id] = code
-                id_to_label[seq_id] = label
-                
-                # Mapeamento sem espaços
-                id_to_code[seq_id.strip()] = code
-                id_to_label[seq_id.strip()] = label
-                
-                # Mapeamento só da primeira parte (antes de espaço ou _)
-                base_id = seq_id.split()[0].split('_')[0]
-                id_to_code[base_id] = code
-                id_to_label[base_id] = label
-        
-        # Mapear Sequence ID para código/label com estratégias flexíveis
-        def flexible_mapping(seq_id, mapping_dict):
-            """Tenta várias estratégias para mapear ID"""
-            if seq_id in mapping_dict:
-                return mapping_dict[seq_id]
-            
-            # Tentar sem espaços
-            clean_id = seq_id.strip()
-            if clean_id in mapping_dict:
-                return mapping_dict[clean_id]
-            
-            # Tentar primeira parte antes de espaço
-            base_id = seq_id.split()[0] if ' ' in seq_id else seq_id
-            if base_id in mapping_dict:
-                return mapping_dict[base_id]
-            
-            # Tentar primeira parte antes de _
-            base_id = seq_id.split('_')[0] if '_' in seq_id else seq_id
-            if base_id in mapping_dict:
-                return mapping_dict[base_id]
-            
-            return None
-        
-        predictions_df['Actual_Code'] = predictions_df['Sequence ID'].apply(
-            lambda x: flexible_mapping(x, id_to_code)
-        )
-        predictions_df['Actual_Label'] = predictions_df['Sequence ID'].apply(
-            lambda x: flexible_mapping(x, id_to_label)
-        )
-        
-        # Estatísticas de mapeamento
-        successful_mappings = predictions_df['Actual_Code'].notna().sum()
-        total_sequences = len(predictions_df)
-        
-        print(f"📊 Mapeamento concluído:")
-        print(f"   Total de sequências: {total_sequences}")
-        print(f"   Mapeamentos bem-sucedidos: {successful_mappings}")
-        print(f"   Taxa de sucesso: {successful_mappings/total_sequences*100:.1f}%")
-        
-        # Mostrar distribuição de labels
-        if successful_mappings > 0:
-            label_distribution = predictions_df['Actual_Label'].value_counts()
-            print(f"   Distribuição de labels verdadeiros:")
-            for label, count in label_distribution.head().items():
-                print(f"     {label}: {count}")
-        
-        # Salvar arquivo atualizado
-        output_file = output_csv if output_csv else predictions_csv
-        predictions_df.to_csv(output_file, index=False)
-        
-        print(f"✅ Arquivo atualizado: {output_file}")
-        
-        return predictions_df
-    
+
     def validate_mapping(self, fasta_file):
-        """
-        Valida mapeamentos e mostra estatísticas
-        
-        Args:
-            fasta_file: Arquivo FASTA para validar
-        """
-        
         print(f"🔍 Validando mapeamentos para: {fasta_file}")
         print("=" * 50)
-        
         mappings_df = self.process_fasta_file(fasta_file)
-        
         if mappings_df.empty:
-            print("❌ Nenhum mapeamento encontrado")
+            print("❌ Nenhum mapeamento encontrado.")
             return
-        
         total = len(mappings_df)
         successful = mappings_df['mapping_success'].sum()
         failed = total - successful
-        
-        print(f"📊 ESTATÍSTICAS DE MAPEAMENTO:")
+        print(f"📊 ESTATÍSTICAS GERAIS:")
         print(f"   Total de sequências: {total}")
         print(f"   Mapeamentos bem-sucedidos: {successful} ({successful/total*100:.1f}%)")
-        print(f"   Mapeamentos falhos: {failed} ({failed/total*100:.1f}%)")
-        
-        # Mostrar distribuição de níveis hierárquicos
+        print(f"   Mapeamentos com falha: {failed} ({failed/total*100:.1f}%)")
         if successful > 0:
-            print(f"\n📋 DISTRIBUIÇÃO POR NÍVEL:")
-            
-            # Classes
-            class_dist = mappings_df['class_level'].value_counts()
-            print(f"   Classes: {dict(class_dist)}")
-            
-            # Orders
-            order_dist = mappings_df['order_level'].value_counts()
-            print(f"   Orders: {dict(order_dist.head())}")
-            
-            # Families
-            family_dist = mappings_df['family_level'].value_counts()
-            print(f"   Families: {dict(family_dist.head())}")
-            
-            # Códigos hierárquicos finais
-            code_dist = mappings_df['hierarchical_code'].value_counts()
-            print(f"\n🎯 CÓDIGOS HIERÁRQUICOS MAPEADOS:")
-            for code, count in code_dist.head().items():
-                label = self.hierarchy_map.get(code, 'Unknown')
-                print(f"   {code} ({label}): {count}")
-        
-        # Mostrar falhas
+            print(f"\n🎯 CÓDIGOS HIERÁRQUICOS MAPEADOS (Top 5):")
+            code_dist = mappings_df['hierarchical_code'].value_counts().head()
+            for code, count in code_dist.items():
+                label = self.hierarchy_map.get(str(code), 'Unknown')
+                print(f"   {code} ({label}): {count} sequências")
         if failed > 0:
-            print(f"\n❌ MAPEAMENTOS QUE FALHARAM:")
+            print(f"\n❌ EXEMPLOS DE MAPEAMENTOS QUE FALHARAM (Top 10):")
             failed_mappings = mappings_df[~mappings_df['mapping_success']]
-            for _, row in failed_mappings.head().iterrows():
-                print(f"   {row['sequence_id']}: {row['class_level']}|{row['order_level']}|{row['family_level']}")
+            for _, row in failed_mappings.head(10).iterrows():
+                print(f"   Header: {row['original_header']}")
+    
+    def add_actual_labels_to_predictions(self, absolute_predictions_csv_path, absolute_fasta_path, base_dir_ignored=None):
+        """
+        Adiciona as colunas 'Actual_Label' e 'Actual_Label_Code' (do FASTA) 
+        ao arquivo CSV de predições.
+        Aceita caminhos ABSOLUTOS.
+        """
         
-        return mappings_df
+        fasta_path = Path(absolute_fasta_path)
+        pred_path = Path(absolute_predictions_csv_path)
+        
+        print(f"    - Lendo FASTA de referência: {fasta_path}")
+        print(f"    - Lendo arquivo de predições: {pred_path}")
+        
+        mappings = []
+        try:
+            with open(fasta_path, 'r') as f:
+                for line_num, line in enumerate(f, 1): 
+                    if line.startswith('>'):
+                        header = line.strip()
+                        seq_id_for_merge = header[1:] 
+                        parsed = self.parse_fasta_header(header)
+                        hierarchical_code = self.map_to_hierarchical_code(parsed)
+                        hierarchical_label = self.hierarchy_map.get(str(hierarchical_code), 'Unknown') if hierarchical_code else 'Unknown'
+                        
+                        mappings.append({
+                            'id': seq_id_for_merge, 
+                            'Actual_Label_Code': hierarchical_code,
+                            'Actual_Label': hierarchical_label
+                        })
+        except FileNotFoundError:
+            print(f"❌ Erro: Arquivo FASTA de referência não encontrado em: {fasta_path}")
+            return False
+        
+        if not mappings:
+            print(f"❌ Erro: Nenhum dado lido do FASTA de referência: {fasta_path}")
+            return False
 
+        actual_labels_df = pd.DataFrame(mappings)
+        
+        if not pred_path.exists():
+            print(f"❌ Erro: Arquivo de predições não encontrado em: {pred_path}")
+            return False
+            
+        print(f"    - Lendo Predições: {pred_path}")
+        try:
+            predictions_df = pd.read_csv(pred_path)
+        except Exception as e:
+            print(f"❌ Erro ao ler o CSV de predições '{pred_path}': {e}")
+            return False
+        
+        id_column_name = None
+        possible_id_names = ['id', 'Sequence ID', 'seq_id', 'sequence_id', 'header', 'name']
+        for name in possible_id_names:
+            if name in predictions_df.columns:
+                id_column_name = name
+                break
+        if id_column_name is None and len(predictions_df.columns) > 0:
+            id_column_name = predictions_df.columns[0]
+            print(f"    - ⚠️  Aviso: Coluna 'id' não encontrada. Usando a primeira coluna '{id_column_name}' como ID.")
+        elif id_column_name is None:
+             print(f"❌ Erro: O CSV de predições '{pred_path}' está vazio ou não tem colunas.")
+             return False
+        if id_column_name != 'id':
+            print(f"    - Renomeando coluna '{id_column_name}' para 'id' para o merge.")
+            predictions_df = predictions_df.rename(columns={id_column_name: 'id'})
+
+        print("    - Mesclando predições com labels verdadeiros...")
+        if 'Actual_Label' in predictions_df.columns:
+            predictions_df = predictions_df.drop(columns=['Actual_Label'])
+        if 'Actual_Label_Code' in predictions_df.columns:
+            predictions_df = predictions_df.drop(columns=['Actual_Label_Code'])
+        predictions_df['id'] = predictions_df['id'].astype(str)
+        actual_labels_df['id'] = actual_labels_df['id'].astype(str)
+        merged_df = pd.merge(predictions_df, actual_labels_df, on='id', how='left')
+        merged_df['Actual_Label'] = merged_df['Actual_Label'].fillna('Unknown')
+        merged_df['Actual_Label_Code'] = merged_df['Actual_Label_Code'].fillna('Unknown')
+
+        try:
+            print(f"    - Salvando arquivo mesclado em: {pred_path}")
+            merged_df.to_csv(pred_path, index=False)
+            return True 
+        except Exception as e:
+            print(f"❌ Erro ao salvar arquivo mesclado em '{pred_path}': {e}")
+            return False 
 
 def main():
-    """Função principal para teste"""
-    import sys
-    
     if len(sys.argv) < 2:
         print("Uso:")
         print("  python fasta_label_mapper.py validate <arquivo.fasta>")
         print("  python fasta_label_mapper.py process <arquivo.fasta> [output.csv]")
-        print("  python fasta_label_mapper.py add-labels <predictions.csv> <fasta.fasta> [output.csv]")
         return
     
     command = sys.argv[1]
-    mapper = FASTALabelMapper()
+    mapper = FASTALabelMapper(base_dir=None) 
     
     if command == 'validate':
+        if len(sys.argv) < 3:
+            print("Erro: Forneça o caminho para o arquivo FASTA.")
+            return
         fasta_file = sys.argv[2]
         mapper.validate_mapping(fasta_file)
         
     elif command == 'process':
+        if len(sys.argv) < 3:
+            print("Erro: Forneça o caminho para o arquivo FASTA.")
+            return
         fasta_file = sys.argv[2]
         output_csv = sys.argv[3] if len(sys.argv) > 3 else f"{Path(fasta_file).stem}_mappings.csv"
         mapper.process_fasta_file(fasta_file, output_csv)
         
-    elif command == 'add-labels':
-        predictions_csv = sys.argv[2]
-        fasta_file = sys.argv[3]
-        output_csv = sys.argv[4] if len(sys.argv) > 4 else None
-        mapper.add_actual_labels_to_predictions(predictions_csv, fasta_file, output_csv)
-        
     else:
         print(f"❌ Comando não reconhecido: {command}")
 
-
 if __name__ == "__main__":
+    print("--- EXECUTANDO VERSÃO ATUALIZADA DO MAPPER ---")
     main()

@@ -59,8 +59,7 @@ def feature_generation(curr_dir1,outputs_file, feature_dir):
 	
 	curr_dir2 = os.getcwd()
 	change_dir = os.chdir(curr_dir1)
-	data_dir = 'data/'
-	shutil.copy2(curr_dir2+'/' + outputs_file, data_dir+outputs_file)
+	shutil.copy2(curr_dir2+'/' + outputs_file, outputs_file)
 	change_dir = os.chdir(feature_destpath)
 	subprocess.run(['rm', outputs_file])
 	change_dir = os.chdir(curr_dir1)

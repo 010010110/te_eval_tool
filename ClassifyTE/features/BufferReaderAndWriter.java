@@ -3,9 +3,9 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileoutputsStream;
+import java.io.FileOutputsStream;
 import java.io.InputStreamReader;
-import java.io.outputsStreamWriter;
+import java.io.OutputsStreamWriter;
 
 public class BufferReaderAndWriter {
 	
@@ -30,8 +30,8 @@ public class BufferReaderAndWriter {
 
 		FileoutputsStream fstream;
 		try {
-			FileoutputsStream fos = new FileoutputsStream(file);
-			outputsStreamWriter osw = new outputsStreamWriter(fos, "UTF-8");
+			FileOutputsStream fos = new FileOutputsStream(file);
+			OutputsStreamWriter osw = new OutputsStreamWriter(fos, "UTF-8");
 			BufferedWriter bufferedWriter = new BufferedWriter(osw);
 			return bufferedWriter;
 

@@ -7,3 +7,34 @@ ClassifyTE
 test*
 __pycache__
 results
+# Pastas de cache do Python
+__pycache__/
+*.pyc
+
+# Pastas de ambientes virtuais
+model_envs/
+
+# Pastas de resultados
+results/
+all_my_results/
+comparison_results/
+
+# Pastas de dados gerados
+Dataset/
+
+# Código de terceiros (deve ser clonado separadamente)
+TERL-master/
+TERL/
+
+# Arquivos de log e saídas temporárias
+*.log
+*.txt
+*.csv
+*.png
+
+# Exceções: Mantenha os arquivos .txt e .csv que SÃO parte do código
+!ClassifyTE/requirements.txt
+!requirements.txt
+!nodes/tree.txt
+!nodes/node.txt
+!mapper_config.json
