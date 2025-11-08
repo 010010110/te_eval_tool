@@ -26,41 +26,41 @@ MODEL_RUNNERS = {
 
 # ==================== COMANDO VALIDATE (MANTIDO) ====================
 
-@click.command()
-@click.option('--input', 'input_file', required=True, type=click.Path(exists=True), 
-              help='Arquivo FASTA de entrada')
-@click.option('--format', 'format_type', default='fasta', 
-              type=click.Choice(['fasta', 'csv']), help='Formato do arquivo')
-@click.option('--detailed', is_flag=True, help='Validação detalhada')
-@click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
-@click.pass_context
-def validate(ctx, input_file, format_type, detailed, verbose):
-    """Validar arquivo de entrada"""
+# @click.command()
+# @click.option('--input', 'input_file', required=True, type=click.Path(exists=True), 
+#               help='Arquivo FASTA de entrada')
+# @click.option('--format', 'format_type', default='fasta', 
+#               type=click.Choice(['fasta', 'csv']), help='Formato do arquivo')
+# @click.option('--detailed', is_flag=True, help='Validação detalhada')
+# @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
+# @click.pass_context
+# def validate(ctx, input_file, format_type, detailed, verbose):
+#     """Validar arquivo de entrada"""
     
-    if not verbose:
-        verbose = ctx.obj.get('verbose', False)
+#     if not verbose:
+#         verbose = ctx.obj.get('verbose', False)
     
-    def validate_fasta_detailed(file_path):
-        # ... (código para validate_fasta_detailed) ...
-        pass
+#     def validate_fasta_detailed(file_path):
+#         # ... (código para validate_fasta_detailed) ...
+#         pass
     
-    def validate_fasta_simple(file_path):
-        # ... (código para validate_fasta_simple) ...
-        pass
+#     def validate_fasta_simple(file_path):
+#         # ... (código para validate_fasta_simple) ...
+#         pass
     
-    click.echo(f"🔍 Validando {input_file} (formato: {format_type})")
+#     click.echo(f"🔍 Validando {input_file} (formato: {format_type})")
     
-    if format_type == 'fasta':
-        if detailed:
-            is_valid = validate_fasta_detailed(input_file)
-        else:
-            is_valid = validate_fasta_simple(input_file)
-    else:
-        click.echo("✅ Formato CSV assumido como válido")
-        is_valid = True
+#     if format_type == 'fasta':
+#         if detailed:
+#             is_valid = validate_fasta_detailed(input_file)
+#         else:
+#             is_valid = validate_fasta_simple(input_file)
+#     else:
+#         click.echo("✅ Formato CSV assumido como válido")
+#         is_valid = True
     
-    if not is_valid:
-        sys.exit(1)
+#     if not is_valid:
+#         sys.exit(1)
 
 # ==================== COMANDO RUN (REFATORADO E CORRIGIDO) ====================
 
