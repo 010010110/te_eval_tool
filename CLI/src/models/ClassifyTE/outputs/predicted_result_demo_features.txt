@@ -1,0 +1,63 @@
+Prediction Results
+Prediction for TE sequence of ID: ATRAN|1.1
+Predicted level 1 : Retrotransposon
+Predicted level 1.1 : LTR
+Predicted level 1.1.1 : Copia
+Final label of TE sequence is Copia
+Predicted Code: 1.1.1
+Predicted Path Codes: 1,1.1,1.1.1
+
+###############################################################
+
+Prediction for TE sequence of ID: BEL-7_Adi-I|1.1.3
+Predicted level 1 : Retrotransposon
+Predicted level 1.1 : LTR
+Predicted level 1.1.3 : Bel-Pao
+Final label of TE sequence is Bel-Pao
+Predicted Code: 1.1.3
+Predicted Path Codes: 1,1.1,1.1.3
+
+###############################################################
+
+Prediction for TE sequence of ID: DTT_Thalos_3B_091_C13-1|2.1.1.1
+Predicted level 2 : DNA transposon
+Predicted level 2.1 : SubclassI
+Predicted level 2.1.1 : TIRS
+Predicted level 2.1.1.1 : Tc1-Mariner
+Final label of TE sequence is Tc1-Mariner
+Predicted Code: 2.1.1.1
+Predicted Path Codes: 2,2.1,2.1.1,2.1.1.1
+
+###############################################################
+
+Prediction for TE sequence of ID: hAT-236_Ami|2.1.1.2
+Predicted level 2 : DNA transposon
+Predicted level 2.1 : SubclassI
+Predicted level 2.1.1 : TIRS
+Predicted level 2.1.1.2 : hAT
+Final label of TE sequence is hAT
+Predicted Code: 2.1.1.2
+Predicted Path Codes: 2,2.1,2.1.1,2.1.1.2
+
+###############################################################
+
+Prediction for TE sequence of ID: LTR_HVVMRXALLhA0665A05_v20_c2_2930|1.1.2
+Predicted level 1 : Retrotransposon
+Predicted level 1.1 : LTR
+Predicted level 1.1.2 : gypsy
+Final label of TE sequence is gypsy
+Predicted Code: 1.1.2
+Predicted Path Codes: 1,1.1,1.1.2
+
+###############################################################
+
+Prediction for TE sequence of ID: trep1702|1.1.1
+Predicted level 1 : Retrotransposon
+Predicted level 1.1 : LTR
+Predicted level 1.1.1 : Copia
+Final label of TE sequence is Copia
+Predicted Code: 1.1.1
+Predicted Path Codes: 1,1.1,1.1.1
+
+###############################################################
+
