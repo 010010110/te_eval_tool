@@ -1,4 +1,4 @@
-# lib/models/terl_runner.py
+
 import click
 import subprocess
 import os
@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Importações dos módulos da pasta 'lib'
+
 from lib.metrics_evaluator import TEMetricsEvaluator
 from lib.fasta_label_mapper import FASTALabelMapper
 
@@ -33,14 +33,14 @@ class TERLRunner:
                 if line.startswith(">"):
                     header_line = line[1:].strip() 
                     parsed = self.mapper.parse_fasta_header(header_line)
-                    # Usamos o seq_id simples para garantir um mapeamento 1:1 com a ordem de leitura.
+
                     if parsed and parsed.get('seq_id'):
                         headers[parsed['seq_id']] = header_line
                     else:
-                        # Fallback para usar o header inteiro como ID se o parse falhar
+
                         headers[header_line.split('|')[0]] = header_line
         
-        # Retorna uma lista dos IDs, mantendo a ordem para mapear o output do TERL (que também é ordenado)
+
         return headers
 
     def _parse_terl_output_header(self, header):
@@ -53,29 +53,29 @@ class TERLRunner:
         if not isinstance(header, str) or not header.startswith('>'):
             return None, None
         
-        # Remove '>' e espaços extras no início/fim
+
         content = header[1:].strip()
         
-        # 1. Divide usando o delimitador CHAVE '||'
+
         parts = content.split('||', 1)
         
         if len(parts) != 2:
-            # Se não encontrar o novo delimitador, o terl_test.py não usou o formato modificado
+
             return None, None 
 
         raw_predicted_path_labels = parts[0].strip() # Ex: 'Class I     SINE'
         raw_score_and_count = parts[1].strip()     # Ex: '0.935367   1'
 
-        # 2. Extrai o score (Primeiro token de raw_score_and_count, ignorando espaços/tabs)
+
         try:
             raw_score = raw_score_and_count.split()[0] # split() sem argumento lida com múltiplos espaços/tabs
             final_confidence_score = float(raw_score)
         except (ValueError, IndexError):
-            # Falha ao converter para float ou lista vazia 
+
             final_confidence_score = None
             
-        # 3. Extrai o Predicted Label (Último token de raw_predicted_path_labels)
-        # O split() lida com múltiplos espaços e tabs entre os termos da taxonomia
+
+
         predicted_path_parts = raw_predicted_path_labels.split()
         predicted_label = predicted_path_parts[-1] if predicted_path_parts else None
 
@@ -90,7 +90,7 @@ class TERLRunner:
         output_path = Path(self.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        # Verificar se o modelo e o script existem
+
         if not Path(self.model_file).exists():
             click.echo(f"❌ Modelo não encontrado: {self.model_file}")
             return False
@@ -102,7 +102,7 @@ class TERLRunner:
             
         click.echo("🧠 Executando predição com TERL...")
         
-        # Parâmetros de execução do TERL
+
         batch_size = 32
         prefix = "TERL_predicted"
         
@@ -144,18 +144,18 @@ class TERLRunner:
         predictions = []
         original_headers_list = list(self.original_headers.keys())
         
-        # Utilizamos um contador para rastrear a ordem, pois o TERL não preserva o ID original.
+
         i = 0 
         
         with open(output_fasta_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line.startswith(">"):
-                    # Extrai o rótulo e o score de confiança
+
                     predicted_label, final_confidence_score = self._parse_terl_output_header(line)
                     
                     if predicted_label:
-                        # Recupera o cabeçalho original com base na ordem de leitura (i)
+
                         original_header = original_headers_list[i] if i < len(original_headers_list) else f"Seq_ID_Unknown_{i}"
                         
                         predictions.append({
@@ -165,35 +165,35 @@ class TERLRunner:
                         })
                         i += 1 # Incrementa o contador somente após processar um header
                     else:
-                        # Mantém o log de erro para headers que falharem
+
                         click.echo(f"   ❌ Erro de parsing no header: '{line}'") 
 
         df = pd.DataFrame(predictions)
         
-        # --- VERIFICAÇÃO DE ROBUSTEZ ---
+
         if df.empty:
             df = pd.DataFrame(columns=["Sequence ID", "Predicted label", "Final_Confidence_Score", "Predicted_Code", "Predicted_Path_Codes", "Actual_Code", "Actual_Label"])
             click.echo("   ⚠️ Aviso: O DataFrame de predições está vazio. Verifique o FASTA de saída do TERL.")
-        # ---------------------------------------------
+
 
         output_csv_name = f"predicted{Path(self.input_file).stem}.csv"
         output_csv_path = output_path / output_csv_name
         
-        # Adiciona a lógica de inferência de caminho para Predicted_Code/Path_Codes
+
         if not df.empty:
             df['Predicted_Code'] = df['Predicted label'].apply(lambda x: self.mapper.get_code_from_label(x))
             df['Predicted_Path_Codes'] = df['Predicted_Code'].apply(lambda x: x.replace('.', ',') if isinstance(x, str) else None)
             click.echo("   Colunas Predicted_Code/Path_Codes adicionadas por inferência.")
 
-            # --- MODIFICAÇÃO CHAVE: GARANTIR GT DATA ANTES DA SAÍDA FINAL ---
+
             
-            # 1. Salva o DF com Predicted Data. Isso garante que o arquivo exista para o mapper ler.
+
             df.to_csv(output_csv_path, index=False)
             
             click.echo("🔄 Inserindo labels de verdade (Actual_Code/Label) via mapeamento...")
             
-            # 2. Chama o mapper para LER o arquivo salvo, ADICIONAR as colunas GT e SOBRESCREVER o arquivo
-            # A função add_actual_labels_to_predictions faz o I/O de reescrita para nós.
+
+
             predictions_df_with_gt = self.mapper.add_actual_labels_to_predictions(str(output_csv_path), self.input_file)
             
             df = predictions_df_with_gt # Atualiza o DF principal
@@ -202,11 +202,11 @@ class TERLRunner:
 
         os.remove(output_fasta_path)
 
-        # Verificação e execução da avaliação (Mantido, mas agora o GT já está no CSV)
+
         if not self.skip_evaluation and not df.empty and 'Actual_Label' in df.columns:
             click.echo("\n🔬 Avaliando métricas...")
             
-            # Este bloco agora usa o CSV final que já contém o GT
+
             try:
                 evaluator = TEMetricsEvaluator()
                 metrics = evaluator.evaluate_predictions(output_csv_path, output_path)

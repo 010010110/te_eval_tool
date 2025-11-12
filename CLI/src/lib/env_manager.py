@@ -1,4 +1,4 @@
-# lib/env_manager.py - Gerenciador de ambientes por modelo
+
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +13,7 @@ class EnvironmentManager:
         self.envs_dir = Path("./src/model_envs")
         self.envs_dir.mkdir(exist_ok=True)
         
-        # Configurações de ambientes por modelo
+
         self.model_configs = {
             "classifyte": {
                 "env_name": "classifyte_env",
@@ -50,12 +50,12 @@ class EnvironmentManager:
         
         print(f"🔧 Criando ambiente para {model_name}...")
         
-        # Remover ambiente existente se houver
+
         if env_path.exists():
             print(f"🧹 Removendo ambiente existente: {env_path}")
             shutil.rmtree(env_path)
         
-        # Criar novo ambiente
+
         python_cmd = f"python{config['python_version']}"
         if not self._check_python_version(python_cmd):
             python_cmd = "python3"  # Fallback
@@ -63,7 +63,7 @@ class EnvironmentManager:
         print(f"📦 Criando ambiente virtual com {python_cmd}...")
         subprocess.run([python_cmd, "-m", "venv", str(env_path)], check=True)
         
-        # Instalar dependências (lógica unificada para todos os modelos)
+
         pip_path = env_path / "bin" / "pip"
         if not pip_path.exists():
             pip_path = env_path / "Scripts" / "pip.exe"  # Windows
@@ -73,7 +73,7 @@ class EnvironmentManager:
             print(f"   Instalando {requirement}...")
             subprocess.run([str(pip_path), "install", requirement], check=True)
         
-        # Salvar configuração do ambiente
+
         self._save_env_config(env_path, config)
         
         print(f"✅ Ambiente {model_name} criado com sucesso!")
@@ -86,39 +86,39 @@ class EnvironmentManager:
             raise ValueError(f"Modelo '{model_name}' não configurado")
         
         config = self.model_configs[model_name]
-        # self.envs_dir é Path("./src/model_envs")
+
         env_path = self.envs_dir / config["env_name"]
         
-        # Verificar se ambiente existe
+
         if not env_path.exists():
             print(f"⚠️  Ambiente {model_name} não existe. Criando...")
             self.create_environment(model_name)
         
-        # Definir caminhos
+
         unix_python_path = env_path / "bin" / "python"
         windows_python_path = env_path / "Scripts" / "python.exe"
 
         python_path = unix_python_path
         
-        # =========================================================
-        # 🔍 INSERÇÃO DO LOG DE DEBUG E RESOLUÇÃO DO CAMINHO ABSOLUTO
-        # Tentamos resolver o caminho para ver onde ele aponta no FS do Docker
+
+
+
         try:
             absolute_path_for_debug = unix_python_path.resolve()
             print(f"============================================================")
             print(f"🔍 DEBUG: Caminho Absoluto (resolved): {absolute_path_for_debug}")
             print(f"============================================================")
         except Exception as e:
-            # Em alguns casos, resolve() falha se o caminho não existir
+
             absolute_path_for_debug = f"[Caminho não resolvido: {unix_python_path}]"
-        # =========================================================
+
         
         if not python_path.exists():
             python_path = windows_python_path
         
-        # Verifica se o executável Python existe
+
         if not python_path.exists():
-            # CRÍTICO: Relata o caminho absoluto (se resolvido) para o erro
+
             raise FileNotFoundError(f"Python não encontrado. Caminho ABSOLUTO esperado: {absolute_path_for_debug}")
         
         return str(python_path)
@@ -139,7 +139,7 @@ class EnvironmentManager:
             print(f"   Status: {status}")
             
             if env_path.exists():
-                # Mostrar versões instaladas
+
                 try:
                     python_path = self.get_python_path(model_name)
                     result = subprocess.run([
@@ -196,6 +196,6 @@ class EnvironmentManager:
 
 
 if __name__ == "__main__":
-    # Teste rápido
+
     manager = EnvironmentManager()
     manager.list_environments()

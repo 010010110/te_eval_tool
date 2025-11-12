@@ -47,7 +47,7 @@ def setup_envs(model):
             env_manager.create_environment(model)
             click.echo(f"✅ Ambiente {model} configurado com sucesso!")
             
-            # Verificação automática
+
             click.echo(f"\n🧪 Verificando ambiente {model}...")
             if env_manager.verify_environment(model):
                 click.echo(f"✅ Ambiente {model} verificado e funcionando!")
@@ -58,7 +58,7 @@ def setup_envs(model):
         except Exception as e:
             click.echo(f"❌ Erro: {str(e)}")
             
-            # Dar dicas baseadas no modelo
+
             if model == "terl":
                 click.echo("\n💡 DICA PARA TERL:")
                 click.echo("   O TERL precisa de Python 3.6")
@@ -140,7 +140,7 @@ def check_python():
     click.echo("🔍 VERIFICANDO VERSÕES PYTHON DISPONÍVEIS")
     click.echo("=" * 45)
     
-    # Versões para testar
+
     python_versions = [
         ("python3.6", "Para TERL"),
         ("python3.7", "Compatível com TERL"),
@@ -161,7 +161,7 @@ def check_python():
                 version_info = result.stdout.strip()
                 found_versions.append((py_cmd, version_info, description))
                 
-                # Colorir com base na compatibilidade
+
                 if "3.6." in version_info:
                     status = "✅ IDEAL para TERL"
                 elif "3.9." in version_info:
@@ -191,7 +191,7 @@ def check_python():
     else:
         click.echo(f"📋 RESUMO: {len(found_versions)} versões encontradas")
         
-        # Verificar se temos as versões ideais
+
         has_terl_python = any("3.6." in version for _, version, _ in found_versions)
         has_classifyte_python = any("3.9." in version for _, version, _ in found_versions)
         

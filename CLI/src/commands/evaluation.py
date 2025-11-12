@@ -40,19 +40,19 @@ def evaluate_metrics(ctx, predictions, output_dir, hierarchy, format, verbose):
                 click.echo(f"{'='*50}")
                 click.echo(f"🎯 Acurácia: {metrics.get('accuracy', 0.0):.4f}")
                 click.echo(f"🎯 F1-Score (macro): {metrics.get('f1_macro', 0.0):.4f}")
-                # NOVAS MÉTRICAS NO RESUMO
+
                 click.echo(f"🎯 Coeficiente Kappa: {metrics.get('cohens_kappa', 0.0):.4f}")
                 click.echo(f"🎯 MCC: {metrics.get('matthews_corrcoef', 0.0):.4f}")
                 click.echo(f"🎯 Youden's J: {metrics.get('youdens_j', 0.0):.4f}")
             
             if format == 'detailed':
-                # Detalhes de Precisão/Recall/Especificidade
+
                 click.echo(f"\nDetalhes de Precisão/Recall/Especificidade:")
                 click.echo(f"   Precisão (macro): {metrics.get('precision_macro', 0.0):.4f}")
                 click.echo(f"   Recall (macro): {metrics.get('recall_macro', 0.0):.4f}")
                 click.echo(f"   Especificidade: {metrics.get('specificity_macro', 0.0):.4f}")
 
-                # Métricas Avançadas
+
                 click.echo(f"\n📊 MÉTRICAS AVANÇADAS:")
                 
                 auroc = metrics.get('auroc_macro')
@@ -63,10 +63,10 @@ def evaluate_metrics(ctx, predictions, output_dir, hierarchy, format, verbose):
                 if map_score not in ['not_available', None]:
                     click.echo(f"   mAP (macro): {map_score:.4f}")
                 
-                # NOVO: Métrica de Consistência
+
                 click.echo(f"   Desvio Padrão F1 por Classe: {metrics.get('std_f1_per_class', 0.0):.4f}")
 
-                # Métricas Hierárquicas
+
                 if metrics.get('hierarchical_f1') not in ['not_available', None]:
                     click.echo(f"\n🌳 MÉTRICAS HIERÁRQUICAS:")
                     click.echo(f"   Precisão: {metrics.get('hierarchical_precision', 0.0):.4f}")
@@ -86,7 +86,7 @@ def evaluate_metrics(ctx, predictions, output_dir, hierarchy, format, verbose):
                     "recall_macro": metrics.get('recall_macro', 0.0),
                     "f1_macro": metrics.get('f1_macro', 0.0),
                     "youdens_j": metrics.get('youdens_j', 0.0),
-                    # NOVAS MÉTRICAS NO JSON
+
                     "cohens_kappa": metrics.get('cohens_kappa', 0.0),
                     "matthews_corrcoef": metrics.get('matthews_corrcoef', 0.0),
                     "std_f1_per_class": metrics.get('std_f1_per_class', 0.0)

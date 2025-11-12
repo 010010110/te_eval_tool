@@ -1,6 +1,6 @@
 import click
 
-# Imports dos módulos de comandos
+
 from commands.environment import env_commands
 from commands.main import validate, run
 from commands.mapping import map_labels
@@ -23,7 +23,7 @@ def cli(ctx, verbose):
     if verbose:
         click.echo("🔧 Modo verboso ativado")
 
-# Adicionar os grupos de comandos
+
 cli.add_command(env_commands)
 cli.add_command(validate)
 cli.add_command(run)

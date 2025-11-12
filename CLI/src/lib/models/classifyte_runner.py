@@ -1,4 +1,4 @@
-# lib/models/classifyte_runner.py
+
 import click
 import subprocess
 import shutil
@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-# Importações dos módulos da pasta 'lib'
+
 from lib.env_manager import EnvironmentManager
 from lib.metrics_evaluator import TEMetricsEvaluator
 from lib.fasta_label_mapper import FASTALabelMapper
@@ -34,16 +34,16 @@ class ClassifyTERunner:
         input_path = Path(self.input_file)
         output_path = Path(self.output_dir)
         
-        # Corrigido: Cria o diretório de saída antes de qualquer operação de arquivo
+
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # Verificar se modelo existe
+
         model_path = Path("./src/models/ClassifyTE/models") / self.model_file
         if not model_path.exists():
             click.echo(f"❌ Modelo não encontrado: {model_path}")
             return False
         
-        # Verificar se arquivo de nós existe
+
         nodes_path = Path("./src/models/ClassifyTE/nodes") / self.node_file
         if not nodes_path.exists():
             nodes_path = Path("./src/nodes") / self.node_file
@@ -51,7 +51,7 @@ class ClassifyTERunner:
                 click.echo(f"❌ Arquivo de nós não encontrado: {self.node_file}")
                 return False
         
-        # Copiar FASTA para ClassifyTE/data
+
         target_fasta = Path("./src/models/ClassifyTE/data") / input_path.name
         if input_path.resolve() != target_fasta.resolve():
             shutil.copy(input_path, target_fasta)
@@ -62,7 +62,7 @@ class ClassifyTERunner:
         features_file = f"{base_name}.csv"
         features_dir = f"{base_name}"
         
-        # Limpar arquivos temporários existentes
+
         temp_files = [
             Path("./src/models/ClassifyTE") / features_dir,
             Path("./src/models/ClassifyTE/data") / features_file
@@ -79,7 +79,7 @@ class ClassifyTERunner:
                         click.echo(f"🧹 Removendo arquivo: {temp_file}")
                     temp_file.unlink()
         
-        # Passo 1: Gerar features
+
         click.echo("⚙️ Gerando features...")
         cmd_generate = [
             self.python_path, "generate_feature_file.py",
@@ -99,7 +99,7 @@ class ClassifyTERunner:
             return False
         click.echo(f"✅ Features geradas: {features_file}")
         
-        # Passo 2: Executar predição
+
         click.echo("🧠 Executando predição...")
         cmd_evaluate = [
             self.python_path, "evaluate.py",
@@ -123,7 +123,7 @@ class ClassifyTERunner:
         if self.verbose:
             click.echo("✅ Predição executada com sucesso")
         
-        # Passo 3: Localizar e copiar resultados
+
         expected_result = Path("./src/models/ClassifyTE/outputs") / f"predicted_out_{features_dir}.csv"
         if not expected_result.exists():
             outputs_dir = Path("./src/models/ClassifyTE/outputs")
@@ -142,13 +142,13 @@ class ClassifyTERunner:
         shutil.copy(expected_result, final_file)
         click.echo(f"📄 Arquivo de saída CSV salvo em: {final_file}")
         
-        # Passo 4: Processar e mostrar resultados
+
         try:
-            # Adicionar labels verdadeiros se a flag auto_label estiver ativa
+
             if self.auto_label:
                 click.echo("📝 Mapeando rótulos do arquivo FASTA para avaliação...")
                 mapper = FASTALabelMapper()
-                # Novo: Usa o método dedicado para adicionar a coluna
+
                 predictions_df = mapper.add_actual_labels_to_predictions(final_file, self.input_file)
             else:
                 predictions_df = pd.read_csv(final_file)
@@ -190,7 +190,7 @@ class ClassifyTERunner:
                         else:
                             temp_file.unlink()
 
-            # Verificação e execução da avaliação (igual a do terl_runner)
+
             if not self.skip_evaluation:
                 if 'Actual_Label' in predictions_df.columns and predictions_df['Actual_Label'].notna().any():
                     click.echo("\n🔬 Avaliando métricas...")

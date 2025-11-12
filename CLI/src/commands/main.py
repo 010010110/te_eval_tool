@@ -1,4 +1,4 @@
-# src/commands/main.py
+
 import click
 import subprocess
 import os
@@ -9,22 +9,22 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Importações dos módulos da nova pasta 'lib'
+
 from lib.metrics_evaluator import TEMetricsEvaluator
 from lib.env_manager import EnvironmentManager
 from lib.fasta_label_mapper import FASTALabelMapper
 
-# Importação dos executores de modelos
+
 from lib.models.classifyte_runner import ClassifyTERunner
 from lib.models.terl_runner import TERLRunner
 
-# Crie um mapeamento de nomes de modelos para suas classes
+
 MODEL_RUNNERS = {
     'classifyte': ClassifyTERunner,
     'terl': TERLRunner,
 }
 
-# ==================== COMANDO VALIDATE (MANTIDO) ====================
+
 
 @click.command()
 @click.option('--input', 'input_file', required=True, type=click.Path(exists=True), 
@@ -41,11 +41,11 @@ def validate(ctx, input_file, format_type, detailed, verbose):
         verbose = ctx.obj.get('verbose', False)
     
     def validate_fasta_detailed(file_path):
-        # ... (código para validate_fasta_detailed) ...
+
         pass
     
     def validate_fasta_simple(file_path):
-        # ... (código para validate_fasta_simple) ...
+
         pass
     
     click.echo(f"🔍 Validando {input_file} (formato: {format_type})")
@@ -62,7 +62,7 @@ def validate(ctx, input_file, format_type, detailed, verbose):
     if not is_valid:
         sys.exit(1)
 
-# ==================== COMANDO RUN (REFATORADO E CORRIGIDO) ====================
+
 
 @click.command()
 @click.option('--model', default='classifyte', 

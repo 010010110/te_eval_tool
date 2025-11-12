@@ -56,7 +56,7 @@ paths:
       operationId: runClassification
       requestBody:
         required: true
-        # CRÍTICO: O input agora é via multipart/form-data por causa do upload do arquivo.
+
         content:
           multipart/form-data:
             schema:
@@ -93,7 +93,7 @@ paths:
                   type: boolean
                   description: Pular avaliação automática de métricas.
                   default: false
-                # cleanTemp e verbose permanecem no schema para documentar que a API os usa
+
                 cleanTemp:
                   type: boolean
                   description: Limpar arquivos temporários do modelo Python. (Valor forçado a TRUE).
@@ -130,23 +130,63 @@ paths:
     post:
       tags:
         - Core
-      summary: Mapear headers FASTA para códigos hierárquicos
+      summary: Mapear headers FASTA para códigos hierárquicos (Assíncrono)
+      description: |
+        Inicia o processo de mapeamento em background. Retorna 200 OK imediatamente.
+        O arquivo FASTA é obrigatório. O arquivo de predições é opcional.
       operationId: mapFastaLabels
       requestBody:
         required: true
         content:
-          application/json:
+
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MapLabelsRequest'
+              type: object
+              properties:
+                fastaFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo FASTA de entrada (Headers estruturados). (Campo do formulário: fastaFile)"
+                predictionsFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo CSV de predições para adicionar labels. (Campo do formulário: predictionsFile)"
+                output:
+                  type: string
+                  description: Arquivo/caminho de saída para os resultados.
+                validateOnly:
+                  type: boolean
+                  description: Apenas validar mapeamentos (não gera arquivo de saída).
+                  default: false
+                treeFile:
+                  type: string
+                  default: src/nodes/tree.txt
+                  description: Arquivo de hierarquia.
+                verbose:
+                  type: boolean
+                  default: true
+                  description: Modo verboso. (Forçado a TRUE pela API)
+              required:
+                - fastaFile
       responses:
         '200':
-          description: Mapeamento concluído com sucesso.
+          description: Processo de mapeamento iniciado com sucesso em background.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SimpleResponse'
-        '400':
-          description: Erro no mapeamento ou parâmetros inválidos.
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Mapeamento iniciado com sucesso em background. Arquivos temporários serão limpos.
+                  outputFile:
+                    type: string
+                    example: data/results/nome_fasta_mapped.csv
+                  status:
+                    type: string
+                    example: PROCESSING_ASYNC
+        '500':
+          description: Falha no pré-processamento (upload de arquivo, erro de validação).
 
   /evaluate:
     post:

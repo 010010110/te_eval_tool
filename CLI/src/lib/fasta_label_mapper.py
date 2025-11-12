@@ -1,4 +1,4 @@
-# fasta_label_mapper.py - Mapeamento automático de headers FASTA para códigos hierárquicos
+
 import pandas as pd
 from pathlib import Path
 import re
@@ -43,20 +43,20 @@ class FASTALabelMapper:
             dict com seq_id (Puro), class_level, order_level, family_level
         """
         
-        # Remover '>' se presente
+
         if header.startswith('>'):
             header = header[1:].strip()
         
-        # Obter ID Puro no início (primeira parte antes do ':' ou ' ' ou '|')
+
         pure_seq_id = header.split(':')[0].split('|')[0].split(' ')[0].strip()
 
-        # 1. TENTAR NOVO FORMATO: ID:Classe:Ordem:Superfamilia...
+
         if ':' in header:
             parts = header.split(':')
             
-            # Se o header for apenas o ID (ex: ATRAN), o parts[0] é o ID puro
+
             if len(parts) >= 4:
-                # Formato completo
+
                 return {
                     'seq_id': pure_seq_id,
                     'class_level': parts[1],
@@ -64,22 +64,22 @@ class FASTALabelMapper:
                     'family_level': parts[3]
                 }
             elif len(parts) >= 3:
-                 # Formato parcial: id:class:order
+
                 return {
                     'seq_id': pure_seq_id,
                     'class_level': parts[1],
                     'order_level': parts[2],
                     'family_level': parts[2]
                 }
-            # Se não tiver a estrutura mínima, cairá no fallback
+
         
-        # 2. TENTAR FORMATO ANTIGO: ID|Class|Order|Family (fallback)
+
         
-        # Dividir por '|'
+
         parts = header.split('|')
         
         if len(parts) >= 4:
-            # Formato padrão: seq|class|order|family
+
             return {
                 'seq_id': pure_seq_id,
                 'class_level': parts[1],
@@ -87,7 +87,7 @@ class FASTALabelMapper:
                 'family_level': parts[3]
             }
         elif len(parts) >= 3:
-            # Formato parcial: seq|class|order
+
             return {
                 'seq_id': pure_seq_id,
                 'class_level': parts[1],
@@ -95,7 +95,7 @@ class FASTALabelMapper:
                 'family_level': parts[2]
             }
         else:
-            # Formato simples: apenas nome da sequência (e inferência de fallback)
+
             inferred = self._infer_classification_from_name(header)
             
             return {
@@ -112,28 +112,28 @@ class FASTALabelMapper:
         
         seq_lower = seq_name.lower()
         
-        # Padrões de reconhecimento baseados em nomes conhecidos (Dicionário)
+
         classification_patterns = {
-            # Retrotransposons - LTR
+
             'copia': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'},
             'gypsy': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'},
             'bel': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
             'pao': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'},
             'erv': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'ERV'},
             
-            # Retrotransposons - LINE
+
             'line': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'L1'},
             'l1': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'L1'},
             'rte': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'RTE'},
             'jockey': {'class_level': 'ClassI', 'order_level': 'LINE', 'family_level': 'Jockey'},
             
-            # Retrotransposons - SINE
+
             'sine': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'},
             '5s': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': '5S'},
             '7sl': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': '7SL'},
             'trna': {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'},
             
-            # DNA Transposons - TIR
+
             'hat': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'},
             'tc1': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
             'mariner': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'Tc1-Mariner'},
@@ -146,17 +146,17 @@ class FASTALabelMapper:
             'harbinger': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
             'pif': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'PIF-Harbinger'},
             
-            # Elementos específicos
+
             'atran': {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Copia'},  # ATRAN é um Copia
             'dtt': {'class_level': 'ClassII', 'order_level': 'TIR', 'family_level': 'hAT'},     # DTT pode ser hAT
         }
         
-        # Buscar padrões no nome (do dicionário)
+
         for pattern, classification in classification_patterns.items():
             if pattern in seq_lower:
                 return classification
         
-        # Padrões baseados em prefixos/sufixos
+
         if seq_lower.startswith('ltr'):
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
         
@@ -166,11 +166,11 @@ class FASTALabelMapper:
         if 'bel' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Bel-Pao'}
         
-        # Padrões para LTR genéricos
+
         if any(keyword in seq_lower for keyword in ['ltr', 'retro']):
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'LTR'}
 
-        # Padrões verbosos do TERL (usando if/elif)
+
         if 'class i' in seq_lower and 'sine' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'SINE', 'family_level': 'tRNA'}
         elif 'class i' in seq_lower and 'copia' in seq_lower:
@@ -182,14 +182,14 @@ class FASTALabelMapper:
         elif 'class i' in seq_lower and 'gypsy' in seq_lower:
             return {'class_level': 'ClassI', 'order_level': 'LTR', 'family_level': 'Gypsy'}
 
-        # Default para elementos não reconhecidos
+
         return {
             'class_level': 'Unknown',
             'order_level': 'Unknown', 
             'family_level': 'Unknown'
         }
     
-    # NOVO MÉTODO OBRIGATÓRIO PARA O TERL_RUNNER (Corrigido para evitar fallback prematuro)
+
     def get_code_from_label(self, label):
         """
         Retorna o código hierárquico (ex: "1.1.1") para um rótulo (label) fornecido.
@@ -200,39 +200,39 @@ class FASTALabelMapper:
             
         normalized_label = self._normalize_label(label)
 
-        # Mapeamentos especiais (copiado de map_to_hierarchical_code para reuso)
+
         special_mappings = {
-            # Classes principais GENÉRICAS REMOVIDAS
+
             'retrotransposon': '1', 'dnatransposon': '2', 'dna': '2',
-            # Orders LTR
+
             'ltr': '1.1',
-            # Families LTR
+
             'copia': '1.1.1', 'gypsy': '1.1.2', 'belpao': '1.1.3', 'bel': '1.1.3', 'pao': '1.1.3', 'erv': '1.1.4',
-            # DIRS
+
             'dirs': '1.2',
-            # LINE
+
             'line': '1.4', 'l1': '1.4.4', 'rte': '1.4.2', 'jockey': '1.4.3', 'r2': '1.4.1', 'i': '1.4.5',
-            # SINE
+
             'sine': '1.5', 'trna': '1.5.1', '7sl': '1.5.2', '5s': '1.5.3',
-            # DNA Transposons
+
             'subclassi': '2.1', 'tir': '2.1.1', 'tirs': '2.1.1',
-            # TIR Families
+
             'tc1mariner': '2.1.1.1', 'tc1': '2.1.1.1', 'mariner': '2.1.1.1', 'hat': '2.1.1.2', 'mutator': '2.1.1.3',
             'merlin': '2.1.1.4', 'transib': '2.1.1.5', 'p': '2.1.1.6', 'piggybac': '2.1.1.7', 'piggyb': '2.1.1.7',
             'pifharbinger': '2.1.1.8', 'harbinger': '2.1.1.8', 'pif': '2.1.1.8', 'cacta': '2.1.1.9',
-            # Elementos específicos
+
             'atran': '1.1.1', 'dtt': '2.1.1.2', 'trep': '1.1.2',
         }
 
-        # 1. Tentar mapeamento exato
+
         if normalized_label in self.label_to_code:
             return self.label_to_code[normalized_label]
             
-        # 2. Tentar mapeamentos especiais
+
         if normalized_label in special_mappings:
             return special_mappings[normalized_label]
             
-        # 3. Tentar busca parcial (usando o método auxiliar existente)
+
         code = self._find_code_for_label(normalized_label)
         if code:
             return code
@@ -248,56 +248,56 @@ class FASTALabelMapper:
         order_level = parsed_header['order_level'] 
         family_level = parsed_header['family_level']
         
-        # Estratégia de mapeamento hierárquico: Family -> Order -> Class
+
         
-        # Normalizar nomes para busca
+
         family_normalized = self._normalize_label(family_level)
         order_normalized = self._normalize_label(order_level)
         class_normalized = self._normalize_label(class_level)
         
-        # 1. Tentar nível family primeiro (mais específico)
+
         code = self._find_code_for_label(family_normalized)
         if code:
             return code
             
-        # 2. Tentar nível order
+
         code = self._find_code_for_label(order_normalized)
         if code:
             return code
             
-        # 3. Tentar nível class
+
         code = self._find_code_for_label(class_normalized)
         if code:
             return code
         
-        # 4. Mapeamentos especiais para casos comuns (FINAL FALLBACK)
+
         special_mappings = {
-            # Classes principais GENÉRICAS REMOVIDAS
+
             'retrotransposon': '1',
             'dnatransposon': '2',
             'dna': '2',
             
-            # Orders LTR
+
             'ltr': '1.1',
-            # Families LTR
+
             'copia': '1.1.1', 'gypsy': '1.1.2', 'belpao': '1.1.3', 'bel': '1.1.3', 'pao': '1.1.3', 'erv': '1.1.4',
-            # DIRS
+
             'dirs': '1.2',
-            # LINE
+
             'line': '1.4', 'l1': '1.4.4', 'rte': '1.4.2', 'jockey': '1.4.3', 'r2': '1.4.1', 'i': '1.4.5',
-            # SINE
+
             'sine': '1.5', 'trna': '1.5.1', '7sl': '1.5.2', '5s': '1.5.3',
-            # DNA Transposons
+
             'subclassi': '2.1', 'tir': '2.1.1', 'tirs': '2.1.1',
-            # TIR Families
+
             'tc1mariner': '2.1.1.1', 'tc1': '2.1.1.1', 'mariner': '2.1.1.1', 'hat': '2.1.1.2', 'mutator': '2.1.1.3',
             'merlin': '2.1.1.4', 'transib': '2.1.1.5', 'p': '2.1.1.6', 'piggybac': '2.1.1.7', 'piggyb': '2.1.1.7',
             'pifharbinger': '2.1.1.8', 'harbinger': '2.1.1.8', 'pif': '2.1.1.8', 'cacta': '2.1.1.9',
-            # Elementos específicos mencionados
+
             'atran': '1.1.1', 'dtt': '2.1.1.2', 'trep': '1.1.2',
         }
         
-        # Tentar mapeamentos especiais
+
         for label in [family_normalized, order_normalized, class_normalized]:
             if label in special_mappings:
                 return special_mappings[label]
@@ -309,10 +309,10 @@ class FASTALabelMapper:
         if not label or label == 'Unknown':
             return ''
         
-        # Converter para lowercase e remover caracteres especiais
+
         normalized = re.sub(r'[^a-zA-Z0-9]', '', label.lower())
         
-        # Mapeamentos de normalização específicos
+
         normalization_map = {
             'classi': 'classi',
             'classii': 'classii', 
@@ -330,11 +330,11 @@ class FASTALabelMapper:
         if not normalized_label:
             return None
             
-        # Busca exata
+
         if normalized_label in self.label_to_code:
             return self.label_to_code[normalized_label]
         
-        # Busca parcial (label contém o termo)
+
         for label, code in self.label_to_code.items():
             if normalized_label in label or label in normalized_label:
                 return code
@@ -355,13 +355,13 @@ class FASTALabelMapper:
                     if line.startswith('>'):
                         header = line.strip()
                         
-                        # Parsear header (que agora retorna o ID PURO)
+
                         parsed = self.parse_fasta_header(header)
                         
-                        # Mapear para código hierárquico
+
                         hierarchical_code = self.map_to_hierarchical_code(parsed)
                         
-                        # Obter label hierárquico
+
                         hierarchical_label = self.hierarchy_map.get(hierarchical_code, 'Unknown') if hierarchical_code else 'Unknown'
                         
                         mapping = {
@@ -397,21 +397,21 @@ class FASTALabelMapper:
         Isto resolve o problema de 79.5% de sucesso, garantindo 100% de sucesso.
         """
         
-        # Carregar predições (Generated by runner, has simplified Sequence ID)
+
         predictions_df = pd.read_csv(predictions_csv)
         
-        # 1. Processar FASTA ORIGINAL (Gera o Mappings_df com ID PURO -> GT)
-        # O process_fasta_file garante que o mapeamento GT seja de 100%.
+
+
         mappings_df = self.process_fasta_file(fasta_file)
         
-        # 2. Colunas GT que queremos do Mappings_df:
+
         gt_cols = mappings_df[['sequence_id', 'hierarchical_code', 'hierarchical_label', 'mapping_success']]
         
-        # Renomear as colunas do Mappings_df para o formato final
+
         gt_cols.columns = ['Sequence ID', 'Actual_Code', 'Actual_Label', 'GT_Mapping_Success']
         
-        # 3. Executar o MERGE (Lookup) usando 'Sequence ID'
-        # predictions_df (Sequence ID Puro) <--- MERGE ---> gt_cols (Sequence ID Puro, Actual_Code, Actual_Label)
+
+
         merged_df = pd.merge(
             predictions_df, 
             gt_cols, 
@@ -420,10 +420,10 @@ class FASTALabelMapper:
             suffixes=('_pred', '_actual') # Adiciona sufixos para evitar colisões
         )
         
-        # 4. Atualizar o DataFrame principal
+
         predictions_df = merged_df
         
-        # 5. Estatísticas de mapeamento (agora deve ser 100%)
+
         successful_mappings = predictions_df['Actual_Code'].notna().sum()
         total_sequences = len(predictions_df)
         
@@ -432,18 +432,18 @@ class FASTALabelMapper:
         print(f" \u00a0 Mapeamentos bem-sucedidos: {successful_mappings}")
         print(f" \u00a0 Taxa de sucesso: {successful_mappings/total_sequences*100:.1f}%")
         
-        # 6. Limpeza e salvamento
-        # Remover coluna temporária
+
+
         predictions_df = predictions_df.drop(columns=['GT_Mapping_Success'], errors='ignore')
 
-        # Mostrar distribuição de labels
+
         if successful_mappings > 0:
             label_distribution = predictions_df['Actual_Label'].value_counts()
             print(f" \u00a0 Distribuição de labels verdadeiros:")
             for label, count in label_distribution.head().items():
                 print(f" \u00a0 \u00a0 {label}: {count}")
         
-        # Salvar arquivo atualizado
+
         output_file = output_csv if output_csv else predictions_csv
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True) 
@@ -481,30 +481,30 @@ class FASTALabelMapper:
         print(f" \u00a0 Mapeamentos bem-sucedidos: {successful} ({successful/total*100:.1f}%)")
         print(f" \u00a0 Mapeamentos falhos: {failed} ({failed/total*100:.1f}%)")
         
-        # Mostrar distribuição de níveis hierárquicos
+
         if successful > 0:
             print(f"\n📋 DISTRIBUIÇÃO POR NÍVEL:")
             
-            # Classes
+
             class_dist = mappings_df['class_level'].value_counts()
             print(f" \u00a0 Classes: {dict(class_dist)}")
             
-            # Orders
+
             order_dist = mappings_df['order_level'].value_counts()
             print(f" \u00a0 Orders: {dict(order_dist.head())}")
             
-            # Families
+
             family_dist = mappings_df['family_level'].value_counts()
             print(f" \u00a0 Families: {dict(family_dist.head())}")
             
-            # Códigos hierárquicos finais
+
             code_dist = mappings_df['hierarchical_code'].value_counts()
             print(f"\n🎯 CÓDIGOS HIERÁRQUICOS MAPEADOS:")
             for code, count in code_dist.head().items():
                 label = self.hierarchy_map.get(code, 'Unknown')
                 print(f" \u00a0 {code} ({label}): {count}")
         
-        # Mostrar falhas
+
         if failed > 0:
             print(f"\n❌ MAPEAMENTOS QUE FALHARAM:")
             failed_mappings = mappings_df[~mappings_df['mapping_success']]

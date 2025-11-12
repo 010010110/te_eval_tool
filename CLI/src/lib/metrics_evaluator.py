@@ -1,4 +1,4 @@
-# metrics_evaluator.py - Métricas padronizadas da revisão de literatura
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
@@ -45,25 +45,25 @@ class TEMetricsEvaluator:
             output_dir: Diretório para salvar resultados
         """
         
-        # Carregar dados
+
         df = pd.read_csv(predictions_file)
         
-        # Verificar se tem labels verdadeiros
+
         if "Actual_Label" not in df.columns:
             print("⚠️ Sem labels verdadeiros. Calculando apenas estatísticas descritivas.")
             return self._calculate_descriptive_stats(df, output_dir)
         
-        # Extrair predições e labels verdadeiros
+
         y_true = df["Actual_Label"].fillna("Unknown")
         y_pred = df["Predicted label"].fillna("Unknown")
         
-        # Calcular todas as métricas
+
         metrics = self._calculate_all_metrics(y_true, y_pred)
         
-        # Salvar resultados
+
         self._save_metrics(metrics, output_dir)
         
-        # Gerar relatório detalhado
+
         self._generate_detailed_report(y_true, y_pred, metrics, output_dir)
         
         return metrics
@@ -73,48 +73,48 @@ class TEMetricsEvaluator:
         
         metrics = {}
         
-        # 1. Acurácia
+
         metrics["accuracy"] = accuracy_score(y_true, y_pred)
         
-        # 2. Precisão (macro e micro)
+
         metrics["precision_macro"] = precision_score(y_true, y_pred, average='macro', zero_division=0)
         metrics["precision_micro"] = precision_score(y_true, y_pred, average='micro', zero_division=0)
         metrics["precision_weighted"] = precision_score(y_true, y_pred, average='weighted', zero_division=0)
         
-        # 3. Recall/Sensibilidade (macro e micro)
+
         metrics["recall_macro"] = recall_score(y_true, y_pred, average='macro', zero_division=0)
         metrics["recall_micro"] = recall_score(y_true, y_pred, average='micro', zero_division=0)
         metrics["recall_weighted"] = recall_score(y_true, y_pred, average='weighted', zero_division=0)
         
-        # 4. F1-score (macro e micro)
+
         metrics["f1_macro"] = f1_score(y_true, y_pred, average='macro', zero_division=0)
         metrics["f1_micro"] = f1_score(y_true, y_pred, average='micro', zero_division=0)
         metrics["f1_weighted"] = f1_score(y_true, y_pred, average='weighted', zero_division=0)
         
-        # 5. Matriz de confusão
+
         cm = confusion_matrix(y_true, y_pred)
         metrics["confusion_matrix"] = cm.tolist()
         
-        # 6. Especificidade e Youden's J Statistic
+
         specificity_scores = self._calculate_specificity(cm)
         metrics["specificity_macro"] = np.mean(specificity_scores)
         metrics["youdens_j"] = metrics["recall_macro"] + metrics["specificity_macro"] - 1
         
-        # 7. Coeficiente Kappa de Cohen
+
         metrics["cohens_kappa"] = cohen_kappa_score(y_true, y_pred)
         
-        # 8. Coeficiente de Correlação de Matthews (MCC)
+
         metrics["matthews_corrcoef"] = matthews_corrcoef(y_true, y_pred)
 
-        # 9. auROC e mAP (se possível)
+
         try:
             unique_labels = np.unique(np.concatenate([y_true, y_pred]))
             if len(unique_labels) > 2:
-                # Multi-class: usar One-vs-Rest
+
                 y_true_bin = label_binarize(y_true, classes=unique_labels)
                 y_pred_bin = label_binarize(y_pred, classes=unique_labels)
                 
-                # auROC para cada classe
+
                 roc_scores = []
                 for i in range(len(unique_labels)):
                     if len(np.unique(y_true_bin[:, i])) > 1:
@@ -123,7 +123,7 @@ class TEMetricsEvaluator:
                 
                 metrics["auroc_macro"] = np.mean(roc_scores) if roc_scores else 0.0
                 
-                # mAP (Mean Average Precision)
+
                 map_scores = []
                 for i in range(len(unique_labels)):
                     if len(np.unique(y_true_bin[:, i])) > 1:
@@ -133,7 +133,7 @@ class TEMetricsEvaluator:
                 metrics["map_macro"] = np.mean(map_scores) if map_scores else 0.0
             
             else:
-                # Binary case
+
                 if len(np.unique(y_true)) == 2:
                     metrics["auroc_macro"] = roc_auc_score(y_true, y_pred, pos_label=unique_labels[1])
                     metrics["map_macro"] = average_precision_score(y_true, y_pred, pos_label=unique_labels[1])
@@ -146,29 +146,29 @@ class TEMetricsEvaluator:
             metrics["auroc_macro"] = "not_available"
             metrics["map_macro"] = "not_available"
         
-        # 10. Métricas por classe
+
         class_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
         metrics["per_class_metrics"] = class_report
         
-        # 11. Métrica de Consistência/Diversidade (Desvio Padrão do F1-score por Classe) (NOVA)
+
         f1_scores_per_class = []
         for class_name, class_data in class_report.items():
-            # Excluir as chaves de resumo macro, weighted, e accuracy
+
             if isinstance(class_data, dict) and 'f1-score' in class_data and class_name not in ['accuracy', 'macro avg', 'weighted avg']:
                 f1_scores_per_class.append(class_data['f1-score'])
         
         if f1_scores_per_class:
-            # Calcular o desvio padrão dos F1-scores por classe
+
             metrics["std_f1_per_class"] = np.std(f1_scores_per_class)
         else:
             metrics["std_f1_per_class"] = 0.0
         
-        # 12. Métricas hierárquicas (se hierarquia disponível)
+
         if self.hierarchy:
             hierarchical_metrics = self._calculate_hierarchical_metrics(y_true, y_pred)
             metrics.update(hierarchical_metrics)
         
-        # 13. Estatísticas gerais
+
         metrics["total_samples"] = len(y_true)
         metrics["num_classes"] = len(np.unique(y_true))
         metrics["num_predicted_classes"] = len(np.unique(y_pred))
@@ -191,11 +191,11 @@ class TEMetricsEvaluator:
         hierarchical_metrics = {}
         
         try:
-            # Mapear labels para códigos hierárquicos
+
             true_codes = [self.hierarchy.get(label, label) for label in y_true]
             pred_codes = [self.hierarchy.get(label, label) for label in y_pred]
             
-            # Calcular distância hierárquica média
+
             distances = []
             for true_code, pred_code in zip(true_codes, pred_codes):
                 distance = self._hierarchical_distance(true_code, pred_code)
@@ -205,7 +205,7 @@ class TEMetricsEvaluator:
             hierarchical_metrics["std_hierarchical_distance"] = np.std(distances)
             hierarchical_metrics["max_hierarchical_distance"] = np.max(distances)
             
-            # Precisão hierárquica
+
             h_precision_scores = []
             h_recall_scores = []
             
@@ -226,7 +226,7 @@ class TEMetricsEvaluator:
             hierarchical_metrics["hierarchical_precision"] = np.mean(h_precision_scores) if h_precision_scores else 0.0
             hierarchical_metrics["hierarchical_recall"] = np.mean(h_recall_scores) if h_recall_scores else 0.0
             
-            # F1 hierárquico
+
             h_prec = hierarchical_metrics["hierarchical_precision"]
             h_rec = hierarchical_metrics["hierarchical_recall"]
             
@@ -251,7 +251,7 @@ class TEMetricsEvaluator:
         path1 = self._get_hierarchical_path(code1)
         path2 = self._get_hierarchical_path(code2)
         
-        # Encontrar ancestral comum
+
         common_length = 0
         for p1, p2 in zip(path1, path2):
             if p1 == p2:
@@ -259,7 +259,7 @@ class TEMetricsEvaluator:
             else:
                 break
         
-        # Distância = profundidade total - 2 * profundidade comum
+
         return len(path1) + len(path2) - 2 * common_length
     
     def _get_hierarchical_path(self, code):
@@ -278,7 +278,7 @@ class TEMetricsEvaluator:
     def _calculate_descriptive_stats(self, df, output_dir):
         """Calcula estatísticas descritivas sem labels verdadeiros"""
         
-        # Criar diretório se não existir
+
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         
@@ -292,7 +292,7 @@ class TEMetricsEvaluator:
             stats["prediction_distribution"] = predictions.value_counts().to_dict()
             stats["most_common_prediction"] = predictions.mode().iloc[0] if len(predictions) > 0 else "N/A"
             
-            # Salvar estatísticas
+
             stats_file = output_path / "descriptive_stats.json"
             with open(stats_file, 'w') as f:
                 json.dump(stats, f, indent=2)
@@ -307,7 +307,7 @@ class TEMetricsEvaluator:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        # Converter numpy arrays para listas para JSON
+
         json_metrics = {}
         for key, value in metrics.items():
             if isinstance(value, np.ndarray):
@@ -317,12 +317,12 @@ class TEMetricsEvaluator:
             else:
                 json_metrics[key] = value
         
-        # Salvar métricas completas
+
         metrics_file = output_path / "detailed_metrics.json"
         with open(metrics_file, 'w') as f:
             json.dump(json_metrics, f, indent=2)
         
-        # Salvar resumo das métricas principais (INCLUINDO AS NOVAS)
+
         summary = {
             "accuracy": json_metrics.get("accuracy", 0.0),
             "precision_macro": json_metrics.get("precision_macro", 0.0),
@@ -353,7 +353,7 @@ class TEMetricsEvaluator:
             f.write("RELATÓRIO DE AVALIAÇÃO - ELEMENTOS TRANSPONÍVEIS\n")
             f.write("=" * 80 + "\n\n")
             
-            # Resumo executivo
+
             f.write("RESUMO EXECUTIVO\n")
             f.write("-" * 40 + "\n")
             f.write(f"Total de sequências: {metrics.get('total_samples', 'N/A')}\n")
@@ -367,7 +367,7 @@ class TEMetricsEvaluator:
             
             f.write(f"Youden's J Statistic: {metrics.get('youdens_j', 0.0):.4f}\n\n")
             
-            # Métricas padrão
+
             f.write("MÉTRICAS PADRÃO\n")
             f.write("-" * 40 + "\n")
             f.write(f"Acurácia: {metrics.get('accuracy', 0.0):.4f}\n")
@@ -382,7 +382,7 @@ class TEMetricsEvaluator:
             f.write(f"F1-Score (weighted): {metrics.get('f1_weighted', 0.0):.4f}\n")
             f.write(f"Especificidade (macro): {metrics.get('specificity_macro', 0.0):.4f}\n\n")
             
-            # Métricas robustas e avançadas (NOVAS INCLUSÕES)
+
             f.write("MÉTRICAS ROBUSTAS E AVANÇADAS\n")
             f.write("-" * 40 + "\n")
             
@@ -402,7 +402,7 @@ class TEMetricsEvaluator:
             else:
                 f.write("mAP (macro): Não disponível\n\n")
             
-            # Métricas hierárquicas
+
             if metrics.get('hierarchical_f1') != 'not_available':
                 f.write("MÉTRICAS HIERÁRQUICAS\n")
                 f.write("-" * 40 + "\n")
@@ -412,7 +412,7 @@ class TEMetricsEvaluator:
                 f.write(f"Distância hierárquica média: {metrics.get('mean_hierarchical_distance', 0.0):.4f}\n")
                 f.write(f"Distância hierárquica máxima: {metrics.get('max_hierarchical_distance', 0.0):.4f}\n\n")
             
-            # Distribuição de classes
+
             if 'per_class_metrics' in metrics:
                 f.write("MÉTRICAS POR CLASSE\n")
                 f.write("-" * 40 + "\n")
