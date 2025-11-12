@@ -9,3 +9,6 @@ node_modules
 run_*
 fastaFile-*
 predictionsFile-*
+CLI/src/data/*
+CLI/src/models/*
+CLI/data/*
