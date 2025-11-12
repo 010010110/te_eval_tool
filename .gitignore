@@ -5,3 +5,7 @@ test*/*
 test*.*
 temp*
 __pycache__
+node_modules
+run_*
+fastaFile-*
+predictionsFile-*

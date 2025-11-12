@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  te_eval_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: te_eval_api_container
+    
+    ports:
+      - "3002:3002"
+    
+    environment:
+      PYTHON_CLI_EXECUTABLE: "/usr/bin/python3" 
+      PORT: 3002
+    
+    volumes:
+      - ./data:/app/data 
+      - ./backend:/app/backend 
+      - ./CLI:/app/CLI
