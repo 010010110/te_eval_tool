@@ -33,7 +33,7 @@ try {
     console.error("❌ ERRO ao carregar o arquivo Swagger:", error.message);
 }
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
     res.status(200).json({ 
         status: 'OK', 
         message: 'TE Evaluation Tool API rodando',

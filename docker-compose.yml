@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   te_eval_api:
     build:
@@ -18,4 +16,5 @@ services:
     volumes:
       - ./data:/app/data 
       - ./backend:/app/backend 
+      - /app/backend/node_modules
       - ./CLI:/app/CLI

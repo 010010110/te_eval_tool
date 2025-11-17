@@ -1,6 +1,8 @@
-const cliService = require('../services/cliService');
 const fileService = require('../services/fileService');
+const jobQueueService = require('../services/jobQueueService');
 const path = require('path');
+
+const BASE_RESULTS_DIR = '/app/data/results';
 
 exports.run = async (req, res) => {
     let tempFilePath = null;
@@ -12,19 +14,18 @@ exports.run = async (req, res) => {
         if (!req.file) {
             throw new Error("Arquivo FASTA de entrada (fastaFile) é obrigatório.");
         }
-        
         tempFilePath = await fileService.saveFileStream(req.file);
         args.input = tempFilePath; 
         
         if (!args.output) {
             const timestamp = Date.now();
             const uniqueDirName = `run_${timestamp}`;
-            runOutputDir = path.join('..', 'data', 'results', uniqueDirName);
+            runOutputDir = path.join(BASE_RESULTS_DIR, uniqueDirName);
             args.output = runOutputDir;
         } else {
             runOutputDir = args.output;
         }
-
+        
         if (!args.modelFile) {
             if (args.model === 'classifyte' || !args.model) {
                 args.modelFile = 'ClassifyTE_combined.pkl';
@@ -44,29 +45,31 @@ exports.run = async (req, res) => {
                 args.modelFile = path.join(prefix, args.modelFile);
             }
         }
+        
         args.clean = true;
         args.verbose = true;
-
-        cliService.execute('run', args)
-            .then(result => {
-                console.log(`[JOB LAUNCHED CONFIRMATION] PID: ${result.pid}, Output: ${runOutputDir}`);
-            })
-            .catch(error => {
-                console.error("ERRO CRÍTICO no lançamento do job assíncrono:", error.message);
-            });
+        
+        const inputFilesForCleanup = [tempFilePath];
+        
+        const jobId = jobQueueService.addJob(
+            'run', 
+            args, 
+            inputFilesForCleanup,
+            runOutputDir
+        );
 
         res.status(200).json({ 
-            message: "Classificação iniciada com sucesso em background. O processamento dos resultados está em andamento.", 
-            output: runOutputDir,
-            status: "PROCESSING_ASYNC",
-            note: "Os resultados serão salvos no diretório especificado quando a execução for concluída."
+            message: "Classificação enfileirada com sucesso e será processada sequencialmente.", 
+            jobId: jobId,
+            status: "QUEUED",
+            outputDir: runOutputDir,
+            note: "Você receberá uma notificação por e-mail na conclusão."
         });
         
     } catch (error) {
         if (tempFilePath) {
             await fileService.deleteFile(tempFilePath);
         }
-        
         res.status(500).json({ 
             message: "Falha no pré-processamento (upload ou configuração de entrada).", 
             error: error.message 
@@ -77,52 +80,62 @@ exports.run = async (req, res) => {
 exports.mapLabels = async (req, res) => {
     let fastaFilePath = null;
     let predictionsFilePath = null;
+    let outputInfo = "Nenhum";
     
     try {
         const args = req.body;
         const files = req.files;
 
+        const inputFilesForCleanup = [];
+
         if (!files || !files.fastaFile || files.fastaFile.length === 0) {
             throw new Error("Arquivo FASTA é obrigatório (campo 'fastaFile').");
         }
-
         fastaFilePath = await fileService.saveFileStream(files.fastaFile[0]);
         args.fasta = fastaFilePath; 
-
+        inputFilesForCleanup.push(fastaFilePath);
 
         if (files.predictionsFile && files.predictionsFile.length > 0) {
             predictionsFilePath = await fileService.saveFileStream(files.predictionsFile[0]);
             args.predictions = predictionsFilePath;
+            inputFilesForCleanup.push(predictionsFilePath);
         }
 
-        if (args.validateOnly === 'true' || args.validateOnly === true) {
-             delete args.output;
-             args.validateOnly = true; 
-        } 
+        const isValidateOnly = (args.validateOnly === 'true' || args.validateOnly === true);
+
+        args.validateOnly = isValidateOnly;
+        args.verbose = true;
         
-        else if (!args.output) {
-             const defaultOutput = `${path.basename(fastaFilePath, path.extname(fastaFilePath))}_mapped.csv`;
-             args.output = path.join('data', 'results', defaultOutput); 
-        }
-
         if (!args.treeFile) {
              args.treeFile = 'src/nodes/tree.txt'; 
         }
 
-        args.verbose = true;
+        if (isValidateOnly) {
+             delete args.output;
+             outputInfo = "Apenas Validação - Sem arquivo de saída";
+        } 
+        else if (!args.output) {
+             const defaultOutput = `${path.basename(fastaFilePath, path.extname(fastaFilePath))}_mapped.csv`;
+             const outputPath = path.join(BASE_RESULTS_DIR, defaultOutput);
+             args.output = outputPath;
+             outputInfo = outputPath;
+        } else {
+             outputInfo = args.output;
+        }
 
-        cliService.execute('map-labels', args)
-            .then(result => {
-                console.log(`[JOB LAUNCHED CONFIRMATION] Mapeamento concluído com PID: ${result.pid}`);
-            })
-            .catch(error => {
-                console.error("ERRO CRÍTICO no lançamento do job assíncrono (map-labels):", error.message);
-            });
+        const jobId = jobQueueService.addJob(
+            'map-labels', 
+            args, 
+            inputFilesForCleanup,
+            outputInfo
+        );
 
         res.status(200).json({ 
-            message: "Mapeamento iniciado com sucesso em background. Arquivos temporários serão limpos.",
-            outputFile: args.output || "Nenhum arquivo de saída (apenas validação)",
-            status: "PROCESSING_ASYNC"
+            message: "Mapeamento enfileirado com sucesso e será processado sequencialmente.", 
+            jobId: jobId,
+            status: "QUEUED",
+            outputFile: outputInfo,
+            note: "Você receberá uma notificação por e-mail na conclusão."
         });
         
     } catch (error) {
@@ -130,7 +143,7 @@ exports.mapLabels = async (req, res) => {
         if (predictionsFilePath) await fileService.deleteFile(predictionsFilePath);
         
         res.status(500).json({ 
-            message: "Falha no pré-processamento de mapeamento (upload ou validação).", 
+            message: "Falha no pré-processamento (upload ou validação de entrada).", 
             error: error.message 
         });
     }

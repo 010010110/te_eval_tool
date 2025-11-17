@@ -62,6 +62,8 @@ paths:
             schema:
               type: object
               properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
                 fastaFile:
                   type: string
                   format: binary
@@ -143,6 +145,8 @@ paths:
             schema:
               type: object
               properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
                 fastaFile:
                   type: string
                   format: binary
@@ -151,9 +155,9 @@ paths:
                   type: string
                   format: binary
                   description: "Arquivo CSV de predições para adicionar labels. (Campo do formulário: predictionsFile)"
-                output:
-                  type: string
-                  description: Arquivo/caminho de saída para os resultados.
+                # output:
+                #   type: string
+                #   description: Arquivo/caminho de saída para os resultados.
                 validateOnly:
                   type: boolean
                   description: Apenas validar mapeamentos (não gera arquivo de saída).
@@ -547,7 +551,17 @@ components:
               default: src/nodes/tree.txt
           required:
             - fastaFile
-            
+
+    EmailNotificationRequest:
+      type: object
+      properties:
+        notificationEmail:
+          type: string
+          format: email
+          description: Endereço de e-mail para receber o link para os arquivos de resultado (CSV/JSON/Log) após a conclusão do processamento assíncrono.
+      required:
+        - notificationEmail
+
     EvaluateRequest:
       allOf:
         - $ref: '#/components/schemas/GeneralParams'
