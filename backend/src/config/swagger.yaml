@@ -1,0 +1,249 @@
+openapi: 3.0.0
+info:
+  title: TE Evaluation Tool API
+  description: API para execução e gerenciamento da ferramenta padronizada de avaliação de classificadores de elementos transponíveis (TE Evaluation Tool v1.0.0).
+  version: 1.0.0
+servers:
+  - url: http://localhost:3002/api/v1
+    description: Servidor de aplicação Docker
+tags:
+  - name: Core
+    description: Comandos principais de classificação e validação.
+  - name: Evaluation
+    description: Comandos de avaliação de métricas e comparação de resultados.
+
+paths:
+  /run:
+    post:
+      tags:
+        - Core
+      summary: Executar classificação (Assíncrono)
+      description: |
+        Inicia a classificação em background. Retorna **200 OK imediatamente**.
+        
+        **Defaults Forçados pela API:**
+        - **output**: Gerado automaticamente se omitido.
+        - **cleanTemp**: Sempre TRUE.
+        - **verbose**: Sempre TRUE.
+        
+        O modelo TERL ignora o parâmetro 'algorithm'.
+      operationId: runClassification
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
+                fastaFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo FASTA de entrada para classificação. (Campo: 'fastaFile')"
+                model:
+                  type: string
+                  enum: [classifyte, terl]
+                  default: classifyte
+                  description: Modelo a ser executado.
+                modelFile:
+                  type: string
+                  description: "Arquivo do modelo a ser carregado (ex: ClassifyTE_combined.pkl, DS3)."
+                output:
+                  type: string
+                  description: Diretório de saída para os resultados. **(Opcional)** Será gerado automaticamente.
+                algorithm:
+                  type: string
+                  enum: [lcpnb, nllcpn]
+                  default: lcpnb
+                  description: Algoritmo hierárquico (somente ClassifyTE).
+                nodeFile:
+                  type: string
+                  default: node.txt
+                  description: Arquivo de nós hierárquicos.
+                skipEvaluation:
+                  type: boolean
+                  default: false
+                  description: Pular avaliação automática de métricas.
+                cleanTemp:
+                  type: boolean
+                  default: true
+                  description: Limpar arquivos temporários após execução (Valor forçado a TRUE).
+                verbose:
+                  type: boolean
+                  default: true
+                  description: Modo verboso. (Valor forçado a TRUE).
+              required:
+                - fastaFile
+                - notificationEmail
+      responses:
+        '200':
+          description: Processo iniciado com sucesso em background.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Classificação enfileirada com sucesso e será processada sequencialmente.
+                  output:
+                    type: string
+                    example: /app/data/results/run_1701000000000
+                  status:
+                    type: string
+                    example: QUEUED
+        '500':
+          description: "Falha no pré-processamento (ex: arquivo não enviado ou erro de escrita)."
+
+  /map-labels:
+    post:
+      tags:
+        - Core
+      summary: Mapear headers FASTA para códigos hierárquicos (Assíncrono)
+      description: Inicia o processo de mapeamento em background. Retorna 200 OK imediatamente.
+      operationId: mapFastaLabels
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
+                fastaFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo FASTA de entrada (Headers estruturados)."
+                predictionsFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo CSV de predições para adicionar labels."
+                output:
+                  type: string
+                  description: Arquivo/caminho de saída para os resultados. (Gerado automaticamente se omitido e validateOnly=false)
+                validateOnly:
+                  type: boolean
+                  default: false
+                  description: Apenas validar mapeamentos (não gera arquivo de saída).
+                treeFile:
+                  type: string
+                  default: src/nodes/tree.txt
+                  description: Arquivo de hierarquia.
+                verbose:
+                  type: boolean
+                  default: true
+                  description: Modo verboso. (Forçado a TRUE pela API)
+              required:
+                - fastaFile
+                - notificationEmail
+      responses:
+        '200':
+          description: Processo de mapeamento iniciado com sucesso em background.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Mapeamento enfileirado com sucesso.
+                  output:
+                    type: string
+                    example: data/results/nome_fasta_mapped.csv
+                  status:
+                    type: string
+                    example: QUEUED
+        '500':
+          description: Falha no pré-processamento (upload de arquivo, erro de validação).
+
+  /evaluate:
+    post:
+      tags:
+        - Evaluation
+      summary: Avaliar predições com métricas padronizadas (Assíncrono)
+      description: |
+        Recebe um arquivo CSV com predições e calcula métricas completas (F1, Kappa, Hierárquicas).
+        Retorna 200 OK imediatamente após o enfileiramento.
+      operationId: evaluateMetrics
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
+                predictionsFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo CSV contendo predições e labels verdadeiros (deve ter 'Actual_Label' e 'Predicted label'). (Campo: predictionsFile)"
+                output:
+                  type: string
+                  description: Diretório de saída para os arquivos de métricas (JSON e CSV). **(Opcional)** Será gerado automaticamente.
+                hierarchy:
+                  type: string
+                  default: src/nodes/tree.txt
+                  description: Arquivo de hierarquia para cálculo de métricas hierárquicas.
+                format:
+                  type: string
+                  enum: [summary, detailed, json]
+                  default: detailed
+                  description: Formato do relatório de saída principal.
+                verbose:
+                  type: boolean
+                  default: true
+                  description: Modo verboso. (Forçado a TRUE pela API).
+              required:
+                - predictionsFile
+                - notificationEmail
+      responses:
+        '200':
+          description: Processo de avaliação iniciado com sucesso em background.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Avaliação enfileirada com sucesso.
+                  jobId:
+                    type: string
+                  output:
+                    type: string
+                    example: /app/data/results/evaluation_1701000000000
+                  status:
+                    type: string
+                    example: QUEUED
+        '500':
+          description: Falha no pré-processamento (upload de arquivo, erro de validação).
+
+components:
+  schemas:
+    GeneralParams:
+      type: object
+      properties:
+        verbose:
+          type: boolean
+          description: "Modo verboso (opcional, padrão: false)."
+          default: false
+
+    SimpleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensagem de status da operação.
+
+    EmailNotificationRequest:
+      type: object
+      properties:
+        notificationEmail:
+          type: string
+          format: email
+          description: Endereço de e-mail para receber o link para os arquivos de resultado (CSV/JSON/Log) após a conclusão do processamento assíncrono.
+      required:
+        - notificationEmail
