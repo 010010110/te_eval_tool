@@ -194,7 +194,7 @@ class ClassifyTERunner:
             if not self.skip_evaluation:
                 if 'Actual_Label' in predictions_df.columns and predictions_df['Actual_Label'].notna().any():
                     click.echo("\n🔬 Avaliando métricas...")
-                    try:
+                    try: 
                         evaluator = TEMetricsEvaluator()
                         metrics = evaluator.evaluate_predictions(final_file, output_path)
 

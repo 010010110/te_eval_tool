@@ -10,7 +10,7 @@ class EnvironmentManager:
     """Gerencia ambientes virtuais específicos para cada modelo"""
     
     def __init__(self):
-        self.envs_dir = Path("./src/model_envs")
+        self.envs_dir = Path("/app/CLI/src/model_envs")
         self.envs_dir.mkdir(exist_ok=True)
         
 

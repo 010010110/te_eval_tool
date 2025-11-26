@@ -3,6 +3,8 @@ const jobQueueService = require('../services/jobQueueService');
 const path = require('path');
 
 const BASE_RESULTS_DIR = '/app/data/results';
+const CLI_ROOT_PATH = path.join(__dirname, '..', '..', '..', 'CLI');
+const TERL_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'TERL', 'Models');
 
 exports.run = async (req, res) => {
     let tempFilePath = null;
@@ -16,7 +18,7 @@ exports.run = async (req, res) => {
         }
         tempFilePath = await fileService.saveFileStream(req.file);
         args.input = tempFilePath; 
-        
+       
         if (!args.output) {
             const timestamp = Date.now();
             const uniqueDirName = `run_${timestamp}`;
@@ -31,13 +33,13 @@ exports.run = async (req, res) => {
                 args.modelFile = 'ClassifyTE_combined.pkl';
             }
             else if (args.model === 'terl') {
-                args.modelFile = path.join('src', 'models', 'TERL', 'Models', 'DS3');
+                args.modelFile = path.join(TERL_MODELS_DIR, 'DS3');
             }
         } 
         
         else if (args.model === 'terl') {
             const shortNameRegex = /^DS[1-5]$/;
-            const prefix = path.join('src', 'models', 'TERL', 'Models');
+            const prefix = path.join(TERL_MODELS_DIR);
             
             if (shortNameRegex.test(args.modelFile) && 
                 !args.modelFile.startsWith(prefix)) {
@@ -48,6 +50,7 @@ exports.run = async (req, res) => {
         
         args.clean = true;
         args.verbose = true;
+        args.autoLabel = true;
         
         const inputFilesForCleanup = [tempFilePath];
         

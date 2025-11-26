@@ -1,16 +1,79 @@
+# --------------------
+# 1. Ambientes Virtuais e Cache Python
+# --------------------
+# Diretórios de ambientes virtuais
 .venv
-model_envs
-default_dataset
-test*/*
-test*.*
-temp*
-__pycache__
-node_modules
+/model_envs/
+/CLI/src/model_envs/
+
+# Cache e artefatos de compilação
+__pycache__/
+*.pyc
+*.p          # Arquivos pickle de modelos (TERL, ClassifyTE)
+*.y          # Arquivos temporários do TERL
+*.log
+.coverage
+.mypy_cache/
+.pytest_cache/
+
+# --------------------
+# 2. Ambientes Node.js e Configuração do Backend
+# --------------------
+# Módulos de dependência
+node_modules/
+/backend/node_modules/
+
+# Variáveis de ambiente (contêm segredos/configurações locais)
+.env
+/backend/.env
+
+# --------------------
+# 3. Saídas, Resultados e Arquivos Temporários
+# --------------------
+
+# Diretório de uploads e resultados gerenciado pelo Backend (data/ é o volume)
+/data/results/
+/data/uploads/
 run_*
 fastaFile-*
 predictionsFile-*
-CLI/src/data/*
-CLI/src/models/*
-CLI/data/*
-backend/.env
-data/results/*
+
+# # Arquivos temporários gerais (existentes no seu gitignore)
+# temp*
+# test*/*
+# test*.*
+
+# --------------------
+# 4. Artefatos Específicos do Modelo TERL
+# --------------------
+/CLI/src/models/TERL/Models/    # Modelos treinados
+/CLI/src/models/TERL/Outputs/  # Relatórios e gráficos gerados
+/CLI/src/models/TERL/Data/     # Dados temporários
+/CLI/src/models/TERL/*.fa      # Arquivos FASTA gerados/copiados
+/CLI/src/models/TERL/*/*.fa
+
+# --------------------
+# 5. Artefatos Específicos do Modelo ClassifyTE
+# --------------------
+/CLI/src/models/ClassifyTE/models/             # Modelos .pkl (se train.py não os salvar fora)
+/CLI/src/models/ClassifyTE/outputs/            # Arquivos de saída (ex: predicted_result_*.csv)
+/CLI/src/models/ClassifyTE/data/*.csv          # Arquivos de features CSV gerados
+/CLI/src/models/ClassifyTE/features_*/         # Diretórios temporários de features (generate_feature_file.py)
+/CLI/src/models/ClassifyTE/data_test/          # Diretórios de dados de teste (se existirem)
+/CLI/src/models/ClassifyTE/CV-Results/
+/CLI/src/models/ClassifyTE/10-fold-data/
+
+# --------------------
+# 6. Arquivos de Entrada Copiados para a CLI
+# --------------------
+# Arquivos de dados copiados/criados na pasta src/data e CLI/data
+/CLI/src/data/*
+/CLI/data/*
+default_dataset # Mantenha se for um arquivo temporário/grande para teste
+
+# --------------------
+# 7. IDE e Sistema Operacional
+# --------------------
+.DS_Store
+.idea/
+.vscode/ # Diretório específico de configurações da IDE (já estava no TERL)
