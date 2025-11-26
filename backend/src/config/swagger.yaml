@@ -4,51 +4,25 @@ info:
   description: API para execução e gerenciamento da ferramenta padronizada de avaliação de classificadores de elementos transponíveis (TE Evaluation Tool v1.0.0).
   version: 1.0.0
 servers:
-  - url: http://localhost:3000
-    description: Servidor desenvolvimento local
+  - url: http://localhost:3002/api/v1
+    description: Servidor de aplicação Docker
 tags:
   - name: Core
     description: Comandos principais de classificação e validação.
   - name: Evaluation
     description: Comandos de avaliação de métricas e comparação de resultados.
-  - name: Utilities
-    description: Comandos diversos de utilidade, informação e limpeza.
-  - name: Environment
-    description: Comandos para gerenciamento de ambientes virtuais.
 
 paths:
-  /validate:
-    post:
-      tags:
-        - Core
-      summary: Validar arquivo de entrada
-      operationId: validateInput
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ValidateRequest'
-      responses:
-        '200':
-          description: Validação concluída com sucesso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
-        '400':
-          description: Erro na validação ou parâmetros inválidos.
-  
   /run:
     post:
       tags:
         - Core
       summary: Executar classificação (Assíncrono)
       description: |
-        Inicia a classificação em background. Retorna **200 OK imediatamente** após o lançamento do processo.
+        Inicia a classificação em background. Retorna **200 OK imediatamente**.
         
         **Defaults Forçados pela API:**
-        - **outputDir**: Gerado automaticamente com timestamp se omitido.
+        - **output**: Gerado automaticamente se omitido.
         - **cleanTemp**: Sempre TRUE.
         - **verbose**: Sempre TRUE.
         
@@ -56,7 +30,6 @@ paths:
       operationId: runClassification
       requestBody:
         required: true
-
         content:
           multipart/form-data:
             schema:
@@ -67,7 +40,7 @@ paths:
                 fastaFile:
                   type: string
                   format: binary
-                  description: Arquivo FASTA de entrada para classificação. (Nome do campo no formulário deve ser **'fastaFile'**)
+                  description: "Arquivo FASTA de entrada para classificação. (Campo: 'fastaFile')"
                 model:
                   type: string
                   enum: [classifyte, terl]
@@ -75,37 +48,34 @@ paths:
                   description: Modelo a ser executado.
                 modelFile:
                   type: string
-                  description: |
-                    Arquivo do modelo a ser carregado. **(Opcional)** Se omitido, o padrão é usado.
-                    - Se **model=classifyte**: Padrões: `ClassifyTE_combined.pkl`, `ClassifyTE_pgsb.pkl`, `ClassifyTE_repbase.pkl`. **Padrão API: ClassifyTE_combined.pkl**.
-                    - Se **model=terl**: Padrões: `DS1`, `DS2`, `DS3`, `DS4`, `DS5`. O arquivo será procurado em `./src/models/TERL/Models/`. **Padrão API: ./src/models/TERL/Models/DS3**.
-                outputDir:
+                  description: "Arquivo do modelo a ser carregado (ex: ClassifyTE_combined.pkl, DS3)."
+                output:
                   type: string
-                  description: Diretório de saída para os resultados. **(Opcional)** Será gerado automaticamente se omitido.
+                  description: Diretório de saída para os resultados. **(Opcional)** Será gerado automaticamente.
                 algorithm:
                   type: string
                   enum: [lcpnb, nllcpn]
                   default: lcpnb
-                  description: Algoritmo hierárquico (somente ClassifyTE). **(Ignorado se model='terl')**.
+                  description: Algoritmo hierárquico (somente ClassifyTE).
                 nodeFile:
                   type: string
                   default: node.txt
                   description: Arquivo de nós hierárquicos.
                 skipEvaluation:
                   type: boolean
-                  description: Pular avaliação automática de métricas.
                   default: false
-
+                  description: Pular avaliação automática de métricas.
                 cleanTemp:
                   type: boolean
-                  description: Limpar arquivos temporários do modelo Python. (Valor forçado a TRUE).
                   default: true
+                  description: Limpar arquivos temporários após execução (Valor forçado a TRUE).
                 verbose:
                   type: boolean
-                  description: Modo verboso. (Valor forçado a TRUE).
                   default: true
+                  description: Modo verboso. (Valor forçado a TRUE).
               required:
                 - fastaFile
+                - notificationEmail
       responses:
         '200':
           description: Processo iniciado com sucesso em background.
@@ -116,15 +86,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Classificação iniciada com sucesso em background. O processamento dos resultados está em andamento.
-                  outputDir:
+                    example: Classificação enfileirada com sucesso e será processada sequencialmente.
+                  output:
                     type: string
-                    example: data/results/run_1701000000000
+                    example: /app/data/results/run_1701000000000
                   status:
                     type: string
-                    example: PROCESSING_ASYNC
-                  note:
-                    type: string
+                    example: QUEUED
         '500':
           description: "Falha no pré-processamento (ex: arquivo não enviado ou erro de escrita)."
 
@@ -133,14 +101,11 @@ paths:
       tags:
         - Core
       summary: Mapear headers FASTA para códigos hierárquicos (Assíncrono)
-      description: |
-        Inicia o processo de mapeamento em background. Retorna 200 OK imediatamente.
-        O arquivo FASTA é obrigatório. O arquivo de predições é opcional.
+      description: Inicia o processo de mapeamento em background. Retorna 200 OK imediatamente.
       operationId: mapFastaLabels
       requestBody:
         required: true
         content:
-
           multipart/form-data:
             schema:
               type: object
@@ -150,18 +115,18 @@ paths:
                 fastaFile:
                   type: string
                   format: binary
-                  description: "Arquivo FASTA de entrada (Headers estruturados). (Campo do formulário: fastaFile)"
+                  description: "Arquivo FASTA de entrada (Headers estruturados)."
                 predictionsFile:
                   type: string
                   format: binary
-                  description: "Arquivo CSV de predições para adicionar labels. (Campo do formulário: predictionsFile)"
-                # output:
-                #   type: string
-                #   description: Arquivo/caminho de saída para os resultados.
+                  description: "Arquivo CSV de predições para adicionar labels."
+                output:
+                  type: string
+                  description: Arquivo/caminho de saída para os resultados. (Gerado automaticamente se omitido e validateOnly=false)
                 validateOnly:
                   type: boolean
-                  description: Apenas validar mapeamentos (não gera arquivo de saída).
                   default: false
+                  description: Apenas validar mapeamentos (não gera arquivo de saída).
                 treeFile:
                   type: string
                   default: src/nodes/tree.txt
@@ -172,6 +137,7 @@ paths:
                   description: Modo verboso. (Forçado a TRUE pela API)
               required:
                 - fastaFile
+                - notificationEmail
       responses:
         '200':
           description: Processo de mapeamento iniciado com sucesso em background.
@@ -182,13 +148,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Mapeamento iniciado com sucesso em background. Arquivos temporários serão limpos.
-                  outputFile:
+                    example: Mapeamento enfileirado com sucesso.
+                  output:
                     type: string
                     example: data/results/nome_fasta_mapped.csv
                   status:
                     type: string
-                    example: PROCESSING_ASYNC
+                    example: QUEUED
         '500':
           description: Falha no pré-processamento (upload de arquivo, erro de validação).
 
@@ -196,243 +162,64 @@ paths:
     post:
       tags:
         - Evaluation
-      summary: Avaliar predições com métricas padronizadas
+      summary: Avaliar predições com métricas padronizadas (Assíncrono)
+      description: |
+        Recebe um arquivo CSV com predições e calcula métricas completas (F1, Kappa, Hierárquicas).
+        Retorna 200 OK imediatamente após o enfileiramento.
       operationId: evaluateMetrics
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EvaluateRequest'
+              type: object
+              properties:
+                notificationEmail:
+                  $ref: '#/components/schemas/EmailNotificationRequest/properties/notificationEmail'
+                predictionsFile:
+                  type: string
+                  format: binary
+                  description: "Arquivo CSV contendo predições e labels verdadeiros (deve ter 'Actual_Label' e 'Predicted label'). (Campo: predictionsFile)"
+                output:
+                  type: string
+                  description: Diretório de saída para os arquivos de métricas (JSON e CSV). **(Opcional)** Será gerado automaticamente.
+                hierarchy:
+                  type: string
+                  default: src/nodes/tree.txt
+                  description: Arquivo de hierarquia para cálculo de métricas hierárquicas.
+                format:
+                  type: string
+                  enum: [summary, detailed, json]
+                  default: detailed
+                  description: Formato do relatório de saída principal.
+                verbose:
+                  type: boolean
+                  default: true
+                  description: Modo verboso. (Forçado a TRUE pela API).
+              required:
+                - predictionsFile
+                - notificationEmail
       responses:
         '200':
-          description: Avaliação concluída com sucesso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvaluationResponse'
-        '400':
-          description: Erro na avaliação ou parâmetros inválidos.
-
-  /compare:
-    post:
-      tags:
-        - Evaluation
-      summary: Comparar múltiplos resultados de classificação
-      operationId: compareResults
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CompareRequest'
-      responses:
-        '200':
-          description: Comparação concluída com sucesso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
-        '400':
-          description: Erro na comparação ou parâmetros inválidos.
-  
-  /environment/setup:
-    post:
-      tags:
-        - Environment
-      summary: Configurar ambientes virtuais
-      operationId: setupEnvironments
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EnvSetupRequest'
-      responses:
-        '200':
-          description: Configuração de ambiente iniciada ou concluída.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
-        '400':
-          description: Erro na configuração.
-
-  /environment/list:
-    get:
-      tags:
-        - Environment
-      summary: Listar ambientes disponíveis
-      operationId: listEnvironments
-      responses:
-        '200':
-          description: Lista de ambientes retornada.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EnvironmentInfo'
-  
-  /environment/verify:
-    get:
-      tags:
-        - Environment
-      summary: Verificar se ambientes estão funcionando corretamente
-      operationId: verifyEnvironments
-      parameters:
-        - name: model
-          in: query
-          description: Modelo específico ou todos a serem verificados.
-          required: false
-          schema:
-            type: string
-            enum: [classifyte, terl, all]
-            default: all
-      responses:
-        '200':
-          description: Status de verificação retornado.
+          description: Processo de avaliação iniciado com sucesso em background.
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
+                    example: Avaliação enfileirada com sucesso.
+                  jobId:
+                    type: string
+                  output:
+                    type: string
+                    example: /app/data/results/evaluation_1701000000000
                   status:
                     type: string
-                    description: Resultado da verificação.
-
-  /environment/clean:
-    delete:
-      tags:
-        - Environment
-      summary: Remover todos os ambientes virtuais específicos
-      operationId: cleanEnvironments
-      responses:
-        '200':
-          description: Ambientes removidos com sucesso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
-
-  /environment/check-python:
-    get:
-      tags:
-        - Environment
-      summary: Verificar quais versões Python estão disponíveis no sistema
-      operationId: checkPythonVersions
-      responses:
-        '200':
-          description: Lista de versões Python encontradas.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    command:
-                      type: string
-                    version:
-                      type: string
-                    status:
-                      type: string
-
-  /environment/info:
-    get:
-      tags:
-        - Environment
-      summary: Mostrar informações detalhadas sobre os ambientes específicos
-      operationId: infoEnvironments
-      responses:
-        '200':
-          description: Informações detalhadas retornadas.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  TERL:
-                    type: object
-                  ClassifyTE:
-                    type: object
-  
-  /diagnose:
-    post:
-      tags:
-        - Utilities
-      summary: Diagnosticar problemas em diretórios de resultados
-      operationId: diagnoseResults
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DiagnoseRequest'
-      responses:
-        '200':
-          description: Diagnóstico concluído.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DiagnoseResponse'
-
-  /info:
-    get:
-      tags:
-        - Utilities
-      summary: Mostrar informações sobre a ferramenta e ambiente
-      operationId: getToolInfo
-      responses:
-        '200':
-          description: Informações sobre a ferramenta.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolInfo'
-
-  /clean:
-    delete:
-      tags:
-        - Utilities
-      summary: Limpar arquivos temporários e caches
-      operationId: cleanFiles
-      parameters:
-        - name: target
-          in: query
-          description: O que limpar.
-          required: false
-          schema:
-            type: string
-            enum: [temp, envs, results, all]
-            default: temp
-      responses:
-        '200':
-          description: Limpeza concluída.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
-
-  /quickstart:
-    post:
-      tags:
-        - Utilities
-      summary: Execução rápida para teste inicial
-      operationId: runQuickstart
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/QuickstartRequest'
-      responses:
-        '200':
-          description: Pipeline quickstart iniciado.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleResponse'
+                    example: QUEUED
+        '500':
+          description: Falha no pré-processamento (upload de arquivo, erro de validação).
 
 components:
   schemas:
@@ -450,107 +237,6 @@ components:
         message:
           type: string
           description: Mensagem de status da operação.
-    
-    ValidateRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            input:
-              type: string
-              description: Caminho/ID do arquivo FASTA de entrada no servidor.
-            format:
-              type: string
-              description: Formato do arquivo.
-              enum: [fasta, csv]
-              default: fasta
-            detailed:
-              type: boolean
-              description: Validação detalhada (opcional).
-              default: false
-          required:
-            - input
-
-    RunRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            model:
-              type: string
-              description: Modelo a ser executado.
-              enum: [classifyte, terl]
-              default: classifyte
-            input:
-              type: string
-              description: Caminho/ID do arquivo FASTA de entrada no servidor.
-            output:
-              type: string
-              description: Diretório de saída no servidor.
-            algorithm:
-              type: string
-              description: Algoritmo hierárquico (ClassifyTE).
-              enum: [lcpnb, nllcpn]
-              default: lcpnb
-            modelFile:
-              type: string
-              description: Arquivo do modelo (.pkl ou DS3) (opcional).
-              enum: [ClassifyTE_combined.pkl, ClassifyTE_pgsb.pkl, ClassifyTE_repbase.pkl, DS1, DS2, DS3, DS4, DS5]
-            nodeFile:
-              type: string
-              description: Arquivo de nós hierárquicos (opcional).
-              default: node.txt
-            skipEvaluation:
-              type: boolean
-              description: Pular avaliação automática de métricas (opcional).
-              default: false
-            clean:
-              type: boolean
-              description: Limpar arquivos temporários após execução (opcional).
-              default: false
-            autoLabel:
-              type: boolean
-              description: Mapear automaticamente labels do FASTA para avaliação (opcional).
-              default: false
-          required:
-            - input
-            - output
-    
-    RunResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        output:
-          type: string
-        durationSeconds:
-          type: number
-          format: float
-
-    MapLabelsRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            fastaFile:
-              type: string
-              description: Caminho/ID do arquivo FASTA com headers estruturados.
-            predictionsFile:
-              type: string
-              description: Caminho/ID do CSV de predições para adicionar labels (opcional).
-            outputFile:
-              type: string
-              description: Arquivo de saída (se predictionsFile não for fornecido).
-            validateOnly:
-              type: boolean
-              description: Apenas validar mapeamentos (opcional).
-              default: false
-            treeFile:
-              type: string
-              description: Arquivo de hierarquia (opcional).
-              default: src/nodes/tree.txt
-          required:
-            - fastaFile
 
     EmailNotificationRequest:
       type: object
@@ -561,148 +247,3 @@ components:
           description: Endereço de e-mail para receber o link para os arquivos de resultado (CSV/JSON/Log) após a conclusão do processamento assíncrono.
       required:
         - notificationEmail
-
-    EvaluateRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            predictionsFile:
-              type: string
-              description: Caminho/ID do arquivo CSV com predições.
-            output:
-              type: string
-              description: Diretório de saída para métricas.
-            hierarchyFile:
-              type: string
-              description: Arquivo de hierarquia (opcional).
-              default: src/nodes/tree.txt
-            format:
-              type: string
-              description: Formato do relatório.
-              enum: [summary, detailed, json]
-              default: detailed
-          required:
-            - predictionsFile
-            - output
-
-    EvaluationResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        summaryMetrics:
-          type: object
-          description: Objeto com as métricas principais.
-          example:
-            accuracy: 0.95
-            f1_macro: 0.94
-        outputFiles:
-          type: array
-          items:
-            type: string
-
-    CompareRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            resultsDir:
-              type: string
-              description: Diretório com múltiplos resultados.
-            output:
-              type: string
-              description: Diretório de saída para comparação (opcional).
-              default: comparison_results
-            metric:
-              type: string
-              description: Métrica principal para comparação (opcional).
-              default: f1_macro
-            autoEvaluate:
-              type: boolean
-              description: Calcular métricas automaticamente (opcional).
-              default: false
-            includeIncomplete:
-              type: boolean
-              description: Incluir resultados sem métricas completas (opcional).
-              default: false
-            minSamples:
-              type: integer
-              description: Número mínimo de amostras para incluir (opcional).
-              default: 1
-          required:
-            - resultsDir
-
-    EnvSetupRequest:
-      type: object
-      properties:
-        model:
-          type: string
-          description: Modelo específico ou todos.
-          enum: [classifyte, terl, all]
-          default: all
-
-    EnvironmentInfo:
-      type: object
-      properties:
-        name:
-          type: string
-        pythonVersion:
-          type: string
-        status:
-          type: string
-
-    DiagnoseRequest:
-      allOf:
-        - $ref: '#/components/schemas/GeneralParams'
-        - type: object
-          properties:
-            resultsDir:
-              type: string
-              description: Diretório com resultados para diagnosticar.
-            fix:
-              type: boolean
-              description: Tentar corrigir problemas automaticamente (opcional).
-              default: false
-          required:
-            - resultsDir
-            
-    DiagnoseResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        issuesFound:
-          type: array
-          items:
-            type: string
-            description: Lista de problemas encontrados.
-        fixableIssues:
-          type: array
-          items:
-            type: string
-            description: Lista de problemas corrigíveis.
-
-    ToolInfo:
-      type: object
-      properties:
-        version:
-          type: string
-        pythonVersion:
-          type: string
-        currentDirectory:
-          type: string
-        modulesStatus:
-          type: object
-        projectStructure:
-          type: array
-          items:
-            type: string
-
-    QuickstartRequest:
-      type: object
-      properties:
-        input:
-          type: string
-          description: Arquivo FASTA para teste.
-          default: data/default_dataset.fasta

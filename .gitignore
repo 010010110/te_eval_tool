@@ -13,3 +13,4 @@ CLI/src/data/*
 CLI/src/models/*
 CLI/data/*
 backend/.env
+data/results/*

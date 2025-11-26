@@ -29,7 +29,7 @@ exports.run = async (req, res) => {
         if (!args.modelFile) {
             if (args.model === 'classifyte' || !args.model) {
                 args.modelFile = 'ClassifyTE_combined.pkl';
-            } 
+            }
             else if (args.model === 'terl') {
                 args.modelFile = path.join('src', 'models', 'TERL', 'Models', 'DS3');
             }
@@ -144,6 +144,62 @@ exports.mapLabels = async (req, res) => {
         
         res.status(500).json({ 
             message: "Falha no pré-processamento (upload ou validação de entrada).", 
+            error: error.message 
+        });
+    }
+};
+
+exports.evaluateMetrics = async (req, res) => {
+    let predictionsFilePath = null;
+    let runOutputDir = null;
+    
+    try {
+        const args = req.body;
+
+        if (!req.file) {
+            throw new Error("Arquivo CSV de predições é obrigatório (campo 'predictionsFile').");
+        }
+        predictionsFilePath = await fileService.saveFileStream(req.file);
+        args.predictions = predictionsFilePath; 
+        
+        const inputFilesForCleanup = [predictionsFilePath];
+
+        if (!args.output) {
+            const timestamp = Date.now();
+            const uniqueDirName = `evaluation_${timestamp}`;
+            runOutputDir = path.join(BASE_RESULTS_DIR, uniqueDirName); 
+            args.output = runOutputDir;
+        } else {
+            runOutputDir = args.output;
+        }
+
+        if (!args.hierarchy) {
+             args.hierarchy = 'src/nodes/tree.txt'; 
+        }
+
+        args.verbose = true;
+
+        const jobId = jobQueueService.addJob(
+            'evaluate', 
+            args, 
+            inputFilesForCleanup,
+            runOutputDir
+        );
+
+        res.status(200).json({ 
+            message: "Avaliação enfileirada com sucesso e será processada sequencialmente.", 
+            jobId: jobId,
+            status: "QUEUED",
+            outputDir: runOutputDir,
+            note: "Você receberá uma notificação por e-mail na conclusão."
+        });
+        
+    } catch (error) {
+        if (predictionsFilePath) {
+            await fileService.deleteFile(predictionsFilePath);
+        }
+        res.status(500).json({ 
+            message: "Falha no pré-processamento (upload ou configuração de entrada).", 
             error: error.message 
         });
     }

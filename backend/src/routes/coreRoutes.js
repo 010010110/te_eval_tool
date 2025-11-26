@@ -13,5 +13,6 @@ const mapLabelsUpload = upload.fields([
 
 router.post('/run', upload.single('fastaFile'), coreController.run);
 router.post('/map-labels', mapLabelsUpload, coreController.mapLabels);
+router.post('/evaluate', upload.single('predictionsFile'), coreController.evaluateMetrics); // NOVO
 
 module.exports = router;
