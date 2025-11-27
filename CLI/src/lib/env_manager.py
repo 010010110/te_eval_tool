@@ -36,6 +36,23 @@ class EnvironmentManager:
                     "seaborn"
                 ],
                 "python_version": "3.9"
+            },
+            "yoro": {
+                "env_name": "yoro_env",
+                "requirements": [
+                    "tensorflow==2.8.0", 
+                    "protobuf==3.20.3",
+                    "biopython==1.78",
+                    "pandas==1.5.3",
+                    "numpy<2.0",
+                    "scipy==1.11.1",
+                    "matplotlib==3.7.1",
+                    "click==8.0.4",
+                    
+                    "h5py>=3.1.0" 
+                    "tqdm"
+                ],
+                "python_version": "3.9"
             }
         }
     

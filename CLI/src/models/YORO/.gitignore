@@ -1,0 +1,4 @@
+*.fasta
+*.gff
+*.ipynb_checkpoints/
+**/__pycache__
