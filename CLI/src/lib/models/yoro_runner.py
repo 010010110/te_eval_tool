@@ -5,32 +5,31 @@ import pandas as pd
 from pathlib import Path
 import os
 
-try:
-    from fasta_label_mapper import FASTALabelMapper
-except ImportError:
-    FASTALabelMapper = None
+from lib.metrics_evaluator import TEMetricsEvaluator
+from lib.fasta_label_mapper import FASTALabelMapper
 
-try:
-    from metrics_evaluator import TEMetricsEvaluator
-except ImportError:
-    TEMetricsEvaluator = None
-
-class YoroRunner:
+class YORORunner:
 
     
-    def __init__(self, python_path, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False):
+    def __init__(self, python_path, model_file, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False):
         self.python_path = python_path
+        self.model_file = model_file
         self.input_file = input_file
         self.output_dir = output_dir
         self.verbose = verbose
         self.clean_temp = clean_temp
         self.auto_label = auto_label
         self.skip_evaluation = skip_evaluation
+        self.clean_temp = clean_temp 
+        self.auto_label = auto_label
+        
+        if self.verbose:
+            click.echo(f"🛠️ YORO Runner configurado com modelo: {self.model_file}")
 
     def run(self):
-        
-        
+              
         click.echo("⚙️ Executando YORO...")
+        YORO_BASE_DIR = Path(__file__).parent.parent.parent / "models" / "YORO"
         
         input_path = Path(self.input_file).resolve()
         output_path = Path(self.output_dir)
@@ -39,14 +38,19 @@ class YoroRunner:
         temp_dir = output_path / "yoro_temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         
-        script_path = "YORO-master/pipelineDomain.py"
+        script_path = YORO_BASE_DIR / "pipelineDomain.py"
         if not Path(script_path).exists():
             click.echo(f" Erro: Script 'pipelineDomain.py' nao encontrado em: YORO-master/")
             return False
 
-        model_path = Path("YORO-master/models/AAqqYOLOqqdomainqqV25.hdf5").resolve()
+        model_path = Path(self.model_file).resolve()
+        
+        if not script_path.exists():
+            click.echo(f"❌ Erro: Script 'pipelineDomain.py' nao encontrado em: {script_path.parent}")
+            return False
+        
         if not model_path.exists():
-            click.echo(f"Erro: Modelo YORO nao encontrado em: {model_path}")
+            click.echo(f"❌ Erro: Modelo YORO nao encontrado em: {model_path}")
             return False
 
         
@@ -72,17 +76,27 @@ class YoroRunner:
             click.echo(f"Erro ao sanitizar FASTA: {e}")
             return False
 
+        # Use absolute paths for command arguments so the subprocess resolves
+        # files correctly even when we change cwd.
+        sanitized_fasta_abs = str(sanitized_fasta_path.resolve())
+        temp_dir_abs = str(temp_dir.resolve())
+        script_path_abs = str(script_path.resolve())
+
         cmd_classify = [
             self.python_path,
-            script_path,
-            "-f", str(sanitized_fasta_path),
-            "-d", str(temp_dir),
-            "-m", str(model_path)
+            script_path_abs,
+            "-f", sanitized_fasta_abs,
+            "-d", temp_dir_abs,
+            "-m", str(model_path),
+            # "-l", "50000"
         ]
         
         if self.verbose: click.echo(f"  Comando: {' '.join(cmd_classify)}")
 
-        result = subprocess.run(cmd_classify, capture_output=True, text=True, cwd=Path.cwd())
+        test_dir = temp_dir / "test"
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        result = subprocess.run(cmd_classify, capture_output=True, text=True, cwd=temp_dir_abs)
         
         if result.returncode != 0:
             click.echo(f"Erro na classificacao do YORO:")
@@ -142,11 +156,12 @@ class YoroRunner:
         if self.auto_label and FASTALabelMapper:
             click.echo(f"\n🏷️  Mapeando labels automaticamente...")
             try:
-                base_dir = str(Path.cwd())
-                mapper = FASTALabelMapper(base_dir=base_dir) 
-                
+                # Provide the mapper with the correct tree.txt path inside CLI/src/nodes
+                tree_file = Path(__file__).parents[2] / 'nodes' / 'tree.txt'
+                mapper = FASTALabelMapper(tree_file=str(tree_file))
+
                 map_success = mapper.add_actual_labels_to_predictions(
-                    str(final_file.resolve()), 
+                    str(final_file.resolve()),
                     str(Path(self.input_file).resolve())
                 )
                 if map_success: click.echo("✅ Labels mapeados com sucesso!")

@@ -48,8 +48,7 @@ class EnvironmentManager:
                     "scipy==1.11.1",
                     "matplotlib==3.7.1",
                     "click==8.0.4",
-                    
-                    "h5py>=3.1.0" 
+                    "h5py>=3.1.0", 
                     "tqdm"
                 ],
                 "python_version": "3.9"
@@ -211,6 +210,45 @@ class EnvironmentManager:
         with open(config_file, 'w') as f:
             json.dump(config, f, indent=2)
 
+    def verify_environment(self, model_name):
+        """Verifica se o ambiente virtual do modelo está funcional e com dependências principais instaladas"""
+        
+        if model_name not in self.model_configs:
+            print(f"Modelo '{model_name}' não configurado para verificação.")
+            return False
+            
+        try:
+            python_path = self.get_python_path(model_name)
+             
+            command = [
+                python_path, 
+                "-c", 
+                "import sys; import numpy; import pandas; import tensorflow; print('Verification OK')"
+            ]
+            
+            # Executa o comando
+            result = subprocess.run(
+                command, 
+                capture_output=True, 
+                text=True, 
+                check=True,
+                timeout=15  
+            )
+
+            if "Verification OK" in result.stdout:
+                return True
+            
+            return False
+                
+        except subprocess.CalledProcessError as e:
+            print(f"\n❌ Erro de verificação no ambiente {model_name.upper()}.")
+            print("   Falha ao importar dependências principais (e.g., numpy, tensorflow).")
+            if e.stderr:
+                 print(f"   Detalhes do erro: {e.stderr.strip().splitlines()[-1]}")
+            return False
+        except Exception as e:
+            print(f"\n❌ Erro de verificação inesperado para {model_name.upper()}: {str(e)}")
+            return False
 
 if __name__ == "__main__":
 

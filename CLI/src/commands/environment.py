@@ -13,13 +13,14 @@ def env_commands():
     pass
 
 @env_commands.command('setup')
-@click.option('--model', type=click.Choice(['classifyte', 'terl', 'all']), default='all', 
+@click.option('--model', type=click.Choice(['classifyte', 'terl', 'yoro', 'all']), default='all', 
               help='Modelo específico ou todos (TERL=Python3.6, ClassifyTE=Python3.9)')
 def setup_envs(model):
     """
     Configurar ambientes virtuais com versões Python específicas:
-    • TERL: Python 3.6 + versões originais 
+    • TERL: Python 3.9 + versões flexíveis 
     • ClassifyTE: Python 3.9 + versões flexíveis
+    
     """
     
     if not EnvironmentManager:
@@ -32,6 +33,7 @@ def setup_envs(model):
         click.echo("🚀 Configurando TODOS os ambientes com versões específicas...")
         click.echo("   • TERL: Python 3.6 + versões originais")
         click.echo("   • ClassifyTE: Python 3.9 + versões flexíveis")
+        click.echo("   • YORO: Python 3.9 + versões fixas")
         click.echo("")
         env_manager.setup_all_environments()
     else:
@@ -83,7 +85,7 @@ def list_envs():
     env_manager.list_environments()
 
 @env_commands.command('verify')
-@click.option('--model', type=click.Choice(['classifyte', 'terl', 'all']), default='all',
+@click.option('--model', type=click.Choice(['classifyte', 'terl', 'yoro',  'all']), default='all',
               help='Verificar modelo específico ou todos')
 def verify_envs(model):
     """Verificar se ambientes estão funcionando corretamente"""
@@ -95,7 +97,7 @@ def verify_envs(model):
     env_manager = EnvironmentManager()
     
     if model == 'all':
-        models_to_verify = ['terl', 'classifyte']
+        models_to_verify = ['terl', 'classifyte', 'yoro']
     else:
         models_to_verify = [model]
     
