@@ -17,11 +17,13 @@ from lib.fasta_label_mapper import FASTALabelMapper
 
 from lib.models.classifyte_runner import ClassifyTERunner
 from lib.models.terl_runner import TERLRunner
+from lib.models.yoro_runner import YORORunner
 
 
 MODEL_RUNNERS = {
     'classifyte': ClassifyTERunner,
     'terl': TERLRunner,
+    'yoro': YORORunner,
 }
 
 
@@ -66,7 +68,7 @@ def validate(ctx, input_file, format_type, detailed, verbose):
 
 @click.command()
 @click.option('--model', default='classifyte', 
-              type=click.Choice(['classifyte', 'terl']),
+              type=click.Choice(['classifyte', 'terl', 'yoro']),
               help='Modelo a ser executado')
 @click.option('--input', 'input_file', required=True, type=click.Path(exists=True), 
               help='Arquivo FASTA de entrada')
@@ -100,6 +102,8 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
         model_file = './src/models/TERL/Models/DS3'
     elif model == 'classifyte' and not model_file:
         model_file = 'ClassifyTE_combined.pkl'
+    elif model == 'yoro' and not model_file:
+        model_file = './src/models/YORO/models/AAqqYOLOqqdomainqqV25.hdf5'
 
     runner_class = MODEL_RUNNERS[model]
     
@@ -111,7 +115,18 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
                 output_dir=output_dir,
                 model_file=model_file,
                 verbose=verbose,
-                skip_evaluation=skip_evaluation # Adicionado o parâmetro
+                skip_evaluation=skip_evaluation
+            )
+        elif model == 'yoro': 
+            runner = runner_class(
+                python_path=EnvironmentManager().get_python_path(model),
+                input_file=input_file,
+                output_dir=output_dir,
+                model_file=model_file,
+                verbose=verbose,
+                skip_evaluation=skip_evaluation,
+                clean_temp=clean,
+                auto_label=auto_label
             )
         else:
             runner = runner_class(
