@@ -214,4 +214,4 @@ def evaluate(predictions, output):
     if TEMetricsEvaluator: TEMetricsEvaluator().evaluate_predictions(predictions, output)
 
 if __name__ == '__main__':
-    cli()
+    cli()   
