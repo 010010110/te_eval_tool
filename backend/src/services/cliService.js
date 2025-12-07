@@ -34,7 +34,7 @@ const buildArgs = (command, args) => {
                     cliArgs.push(cliOption);
                 }
             }
-        } else if (value !== null && value !== undefined) {
+        } else if (value !== null && value !== undefined && value !== '') {
             if (key !== 'verbose' && key !== 'notificationEmail') { 
                 cliArgs.push(cliOption);
                 cliArgs.push(String(value));

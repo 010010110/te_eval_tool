@@ -147,9 +147,35 @@ class ClassifyTERunner:
 
             if self.auto_label:
                 click.echo("📝 Mapeando rótulos do arquivo FASTA para avaliação...")
-                mapper = FASTALabelMapper()
-
-                predictions_df = mapper.add_actual_labels_to_predictions(final_file, self.input_file)
+                
+                # Use the copied FASTA file in ClassifyTE/data instead of the temp input
+                copied_fasta = Path("./src/models/ClassifyTE/data") / input_path.name
+                fasta_to_map = str(copied_fasta) if copied_fasta.exists() else self.input_file
+                
+                if self.verbose:
+                    click.echo(f"   Input FASTA original: {self.input_file}", err=True)
+                    click.echo(f"   FASTA copiado: {copied_fasta}", err=True)
+                    click.echo(f"   FASTA para mapeamento: {fasta_to_map}", err=True)
+                    click.echo(f"   Arquivo existe? {Path(fasta_to_map).exists()}", err=True)
+                
+                try:
+                    mapper = FASTALabelMapper()
+                    predictions_df = mapper.add_actual_labels_to_predictions(str(final_file), fasta_to_map)
+                    
+                    # Verify if Actual_Label column was added
+                    if 'Actual_Label' in predictions_df.columns:
+                        actual_count = predictions_df['Actual_Label'].notna().sum()
+                        click.echo(f"✅ Coluna Actual_Label adicionada com {actual_count} valores preenchidos")
+                        click.echo(f"   Colunas finais: {list(predictions_df.columns)}", err=True)
+                    else:
+                        click.echo("⚠️ ERRO: Coluna Actual_Label NÃO foi adicionada!", err=True)
+                        click.echo(f"   Colunas disponíveis: {list(predictions_df.columns)}", err=True)
+                except Exception as mapper_error:
+                    click.echo(f"❌ ERRO no mapeamento automático: {str(mapper_error)}", err=True)
+                    import traceback
+                    click.echo(traceback.format_exc(), err=True)
+                    # Continue sem auto-label em caso de erro
+                    predictions_df = pd.read_csv(final_file)
             else:
                 predictions_df = pd.read_csv(final_file)
 

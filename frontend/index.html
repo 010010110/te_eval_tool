@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TE Eval Tool — Quick UI</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+        <div class="app-topbar">
+            <div class="app-brand">
+                <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#02121a;font-weight:700">TE</div>
+                <div>
+                    <h1>TE Eval Tool</h1>
+                    <div class="muted" style="font-size:12px">Research UI — run | map-labels | evaluate</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center">
+                <div class="muted">v1.0.0</div>
+                <!-- <div style="font-size:12px;color:var(--muted)">Connected: <strong style="color:var(--accent)">Local</strong></div> -->
+            </div>
+        </div>
+        <div class="bg-scanline" aria-hidden="true"></div>
+            <!-- DNA double-helix accent (inline SVG for lightweight styling) -->
+            <!-- <svg height="200px" width="200px" version="1.1" id="Capa_1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                viewBox="0 0 389.363 389.363" xml:space="preserve">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                    <defs>
+                        <linearGradient id="g_theme" x1="0" x2="1">
+                            <stop offset="0%" stop-color="#7EE7B8" />
+                            <stop offset="100%" stop-color="#6EC8F1" />
+                        </linearGradient>
+                    </defs>
+                    <g>
+                        <path fill="url(#g_theme)"
+                            d="M253.377,132.283c0-30.693-21.872-48.106-44.425-62.393c22.554-14.287,44.425-31.699,44.425-62.391 c0-4.143-3.357-7.5-7.5-7.5c-4.143,0-7.5,3.357-7.5,7.5c0,4.473-0.648,8.584-1.819,12.412h-83.753 c-1.172-3.828-1.819-7.939-1.819-12.412c0-4.143-3.357-7.5-7.5-7.5c-4.143,0-7.5,3.357-7.5,7.5 c0,30.691,21.871,48.104,44.425,62.391c-22.553,14.287-44.425,31.699-44.425,62.393c0,30.693,21.872,48.107,44.425,62.395 c-22.553,14.287-44.425,31.701-44.425,62.395c0,30.693,21.872,48.107,44.425,62.397c-22.553,14.287-44.425,31.701-44.425,62.395 c0,4.143,3.357,7.5,7.5,7.5c4.143,0,7.5-3.357,7.5-7.5c0-4.475,0.647-8.588,1.819-12.414h83.753 c1.172,3.826,1.819,7.94,1.819,12.414c0,4.143,3.357,7.5,7.5,7.5c4.143,0,7.5-3.357,7.5-7.5c0-30.693-21.872-48.107-44.425-62.395 c22.553-14.289,44.425-31.703,44.425-62.397c0-30.693-21.872-48.107-44.425-62.395 C231.505,180.391,253.377,162.977,253.377,132.283z M150.986,132.283c0-4.799,0.743-9.182,2.082-13.24h83.227 c1.339,4.059,2.082,8.441,2.082,13.24c0,4.15-0.552,7.994-1.566,11.586h-84.259C151.538,140.277,150.986,136.434,150.986,132.283z M160.967,34.912h67.429c-8.21,10.146-20.595,18.154-33.715,26.191C181.562,53.066,169.177,45.059,160.967,34.912z M194.681,78.678 c12.759,7.815,24.813,15.609,33.018,25.365h-66.036C169.869,94.287,181.923,86.492,194.681,78.678z M238.377,257.072 c0,4.799-0.743,9.186-2.084,13.246H153.07c-1.341-4.061-2.084-8.447-2.084-13.246c0-4.15,0.551-7.992,1.564-11.58h84.262 C237.827,249.08,238.377,252.922,238.377,257.072z M228.396,354.449h-67.429c8.21-10.148,20.595-18.156,33.714-26.193 C207.801,336.293,220.186,344.301,228.396,354.449z M194.681,310.68c-12.757-7.814-24.809-15.607-33.014-25.361h66.028 C219.491,295.072,207.439,302.865,194.681,310.68z M229.042,230.492H160.32c8.198-10.543,20.887-18.773,34.361-27.027 C208.156,211.719,220.845,219.949,229.042,230.492z M194.681,185.891c-13.472-8.252-26.158-16.48-34.357-27.021h68.714 C220.84,169.41,208.154,177.639,194.681,185.891z" />
+                    </g>
+                </g>
+            </svg> -->
+        </div>
+    </header>
+
+
+        <main>
+            <div class="layout">
+                <aside class="sidebar">
+                                        <div class="project">
+                                                <h4>Project</h4>
+                                                <div style="margin-top:6px" class="muted">
+                                                    <strong>Researcher:</strong> Gabriel Carneiro de Arruda
+                                                </div>
+                                                <div style="margin-top:6px" class="muted">
+                                                    <strong>Advisor:</strong> Prof. Dr. Adriano Ferrasa
+                                                </div>
+                                                <div style="margin-top:6px" class="muted">
+                                                    <strong>Co-Advisor:</strong> Prof. Dr. Alceu e Souza Britto Jr.
+                                                </div>
+                                                <div style="margin-top:6px" class="muted">
+                                                    <strong>University:</strong> Universidade Estadual de Ponta Grossa
+                                                </div>
+                                                <div style="margin-top:6px" class="muted">
+                                                    <strong>Program:</strong> Applied Computing Graduate Program
+                                                </div>
+                                        </div>
+                    <div class="project">
+                        <h4>Models</h4>
+                        <ul style="margin:8px 0 0 12px;color:var(--muted)">
+                            <li>YORO</li>
+                            <li>ClassifyTE</li>
+                            <li>TERL</li>
+                        </ul>
+                    </div>
+                </aside>
+                <div class="layout-main">
+        <section class="forms">
+            <div class="tabs">
+                <button class="tab active" data-tab="runTab">Run</button>
+                <button class="tab" data-tab="mapTab">Map Labels</button>
+                <button class="tab" data-tab="evalTab">Evaluate</button>
+            </div>
+
+            <div id="runTab" class="card tabContent active">
+                <h2>Run — Classification</h2>
+                <p class="howto"><strong>Purpose</strong>: Start an asynchronous classification job. Upload a FASTA file
+                    and choose a model to run; the server will queue the job and return immediately with a job id and
+                    output path. Some parameters are enforced by the server.</p>
+
+                <div class="howto-details">
+                    <h4>Inputs</h4>
+                    <ul>
+                        <li><strong>FASTA (file)</strong> — required. FASTA file with sequence headers expected by the
+                            selected model.</li>
+                        <li><strong>model</strong> — choose one of <em>classifyte</em>, <em>terl</em>, or <em>yoro</em>.
+                        </li>
+                        <li><strong>modelFile</strong> — optional selection of the model to use (lists available models
+                            for the selected model type).</li>
+                        <li><strong>ClassifyTE-specific</strong> options: <code>algorithm</code> (LCPNB or NLLCPN) and
+                        <li><strong>YORO-specific</strong> options: <code>window</code>, <code>threads</code>,
+                            <code>threshold</code>, <code>cycles</code>, and <code>autoLabel</code>.
+                        </li>
+                    </ul>
+
+                    <h4>Server behavior</h4>
+                    <ul>
+                        <li>The API queues jobs and returns immediately with a job id and output path.</li>
+                        <li>The server will auto-generate the output directory when you omit it.</li>
+                        <li>Server-enforced flags: <code>clean=true</code>, <code>verbose=true</code>, and
+                            <code>autoLabel=true</code> for /run. You can still pass these fields but the server may
+                            override them.
+                        </li>
+                    </ul>
+                </div>
+
+                    <form id="runForm">
+                        <label>Notification email:
+                            <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                        </label>
+                    <label>FASTA (file):
+                        <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                    </label>
+
+                    <label>Model:
+                        <select name="model">
+                            <option value="classifyte">classifyte</option>
+                            <option value="terl">terl</option>
+                            <option value="yoro">yoro</option>
+                        </select>
+                    </label>
+
+                    <div id="modelOptions">
+                        <!-- Model-specific options will appear here based on selected model -->
+                        <label id="modelFileLabel">modelFile (optional):
+                            <select name="modelFile" id="modelFileSelect">
+                                <!-- populated by app.js -->
+                            </select>
+                        </label>
+
+                        <div id="classifyteOpts" class="model-specific hidden">
+                            <div id="algorithmGroup">
+                                <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
+                                <select id="algorithm" name="algorithm">
+                                    <option value="lcpnb" selected>LCPNB</option>
+                                    <option value="nllcpn">NLLCPN</option>
+                                </select>
+                            </div>
+
+                            <div class="models-list">
+                                <strong>Available ClassifyTE models:</strong>
+                                <ul id="classifyteModelList">
+                                    <li>ClassifyTE_combined</li>
+                                    <li>ClassifyTE_pgsb</li>
+                                    <li>ClassifyTE_repbase</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="terlOpts" class="model-specific hidden">
+                            <div class="models-list small">
+                                <strong>Available TERL model folders:</strong>
+                                <ul id="terlModelList"></ul>
+                            </div>
+                        </div>
+
+                        <div id="yoroOptions" class="form-section disabled-field model-specific hidden"
+                            style="margin-top:12px;">
+                            <h3>YORO options (only for model = YORO)</h3>
+                            <label for="window">Window size (window)</label>
+                            <input type="number" id="window" name="window" value="50000" min="1">
+
+                            <label for="threads">Threads (threads)</label>
+                            <input type="number" id="threads" name="threads"
+                                placeholder="leave empty to use available cores">
+
+                            <label for="threshold">Threshold (threshold)</label>
+                            <input type="number" step="0.01" id="threshold" name="threshold" value="0.8" min="0"
+                                max="1">
+
+                            <label for="cycles">Cycles (cycles)</label>
+                            <input type="number" id="cycles" name="cycles" value="1" min="1">
+
+                            <div class="models-list">
+                                <strong>Available YORO models:</strong>
+                                <ul id="yoroModelList">
+                                    <li>AAqqYOLOqqdomainqqV21</li>
+                                    <li>AAqqYOLOqqdomainqqV25</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="note">
+                        <strong>Note:</strong> The server enforces defaults for several parameters (for example,
+                        clean=true, verbose=true and autoLabel=true for /run). You do not need to provide those—server
+                        will apply them.
+                    </div>
+
+                    <button type="submit">Submit /run</button>
+                    <pre class="response" id="runResult"></pre>
+                </form>
+            </div>
+
+            <div id="mapTab" class="card tabContent">
+                <h2>Map Labels</h2>
+                <p class="howto"><strong>Purpose</strong>: Map FASTA headers into hierarchical codes or add actual
+                    labels to an existing predictions CSV. This operation is asynchronous and will queue a job for
+                    processing. When validateOnly=true, the server will only validate mappings and will not write
+                    output.</p>
+
+                <div class="howto-details">
+                    <h4>Inputs</h4>
+                    <ul>
+                        <li><strong>FASTA (file)</strong> — required. FASTA should use the standard header format
+                            expected by the mapper.</li>
+                        <li><strong>predictionsFile (CSV)</strong> — optional. If provided the mapper will attempt to
+                            add Actual_Label/Actual_Code columns into the predictions CSV.</li>
+                        <li><strong>validateOnly</strong> — when set to true, the server will only validate mappings and
+                            will not write a mapped output file.</li>
+                    </ul>
+
+                    <h4>Server behavior</h4>
+                    <ul>
+                        <li>The API will use the default server-side tree file and will auto-generate an output path
+                            when needed.</li>
+                        <li>If <code>validateOnly=true</code> the server returns diagnostics and does not produce a
+                            result file.</li>
+                    </ul>
+                </div>
+                    <form id="mapForm">
+                        <label>Notification email:
+                            <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                        </label>
+                    <label>FASTA (file):
+                        <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                    </label>
+
+                    <label>Predictions (CSV) — optional for validation/mapping:
+                        <input type="file" name="predictionsFile" accept=".csv" />
+                    </label>
+
+                    <label>validateOnly:
+                        <select name="validateOnly">
+                            <option value="false">false</option>
+                            <option value="true">true (validation only)</option>
+                        </select>
+                    </label>
+
+                    <div class="note">
+                        <strong>Note:</strong> If <code>validateOnly=true</code> the server performs only validation and
+                        will not write a mapped output file.
+                    </div>
+
+                    <button type="submit">Submit /map-labels</button>
+                    <pre class="response" id="mapResult"></pre>
+                </form>
+            </div>
+
+            <div id="evalTab" class="card tabContent">
+                <h2>Evaluate — Generate Metrics</h2>
+                <p class="howto"><strong>Purpose</strong>: Compute standardized evaluation metrics from a predictions
+                    CSV (must contain ground-truth labels when required). The job runs asynchronously and returns a job
+                    id immediately.</p>
+
+                <div class="howto-details">
+                    <h4>Inputs</h4>
+                    <ul>
+                        <li><strong>predictionsFile (CSV)</strong> — required. The CSV should contain at minimum the
+                            columns used by the evaluator (e.g. <code>Actual_Label</code>,
+                            <code>Predicted label</code>).
+                        </li>
+                        <li><strong>format</strong> — choose <code>detailed</code>, <code>summary</code> or
+                            <code>json</code> depending on the output you need.
+                        </li>
+                    </ul>
+
+                    <h4>Server behavior</h4>
+                    <ul>
+                        <li>The server sets <code>verbose=true</code> and will create an output directory automatically
+                            when omitted.</li>
+                        <li>The evaluator generates JSON and text reports; include Actual_Label in the predictions CSV
+                            to produce full metrics.</li>
+                    </ul>
+                </div>
+
+                    <form id="evaluateForm">
+                        <label>Notification email:
+                            <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                        </label>
+                    <label>Predictions (CSV):
+                        <input type="file" name="predictionsFile" accept=".csv" required />
+                    </label>
+
+                    <label>format:
+                        <select name="format">
+                            <option value="detailed">detailed</option>
+                            <option value="summary">summary</option>
+                            <option value="json">json</option>
+                        </select>
+                    </label>
+
+                    <div class="note">The server enforces <code>verbose=true</code> for /evaluate.</div>
+
+                    <button type="submit">Submit /evaluate</button>
+                    <pre class="response" id="evalResult"></pre>
+                </form>
+            </div>
+        </section>
+
+        <section class="info">
+            <h3>Quick reference — endpoints</h3>
+
+            <div class="endpoint">
+                <h4>/run — classification</h4>
+                <p><strong>Purpose:</strong> Classify transposable elements in DNA sequences using machine learning models. Upload a FASTA file containing DNA sequences and select a classification model (ClassifyTE, TERL, or YORO). The system automatically labels sequences, runs the selected model, and optionally evaluates the results against known annotations.</p>
+            </div>
+
+            <div class="endpoint">
+                <h4>/map-labels — FASTA header mapping</h4>
+                <p><strong>Purpose:</strong> Standardize and validate FASTA sequence headers according to a hierarchical taxonomy. This command maps custom or inconsistent sequence labels to a unified classification tree, ensuring compatibility across different tools and datasets. Useful for preparing datasets or validating existing annotations.</p>
+            </div>
+
+            <div class="endpoint">
+                <h4>/evaluate — metrics</h4>
+                <p><strong>Purpose:</strong> Assess classification model performance by computing comprehensive metrics (precision, recall, F1-score, confusion matrices). Compare predicted labels against ground-truth annotations to quantify model accuracy at multiple taxonomic levels. Produces both human-readable reports and machine-readable JSON output.</p>
+            </div>
+
+            <div class="notes">
+                <h4>Notes</h4>
+                <ol>
+                    <li>When using notifications the API attempts to email result links and attachments; outputs are removed from server
+                </ol>
+            </div>
+                </section>
+                </div>
+            </div> 
+        </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

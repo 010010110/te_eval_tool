@@ -26,21 +26,15 @@ class TERLRunner:
         self.original_headers = self._load_original_headers()
 
     def _load_original_headers(self):
-        """Carrega os cabeçalhos originais do arquivo de entrada FASTA, mapeados por ID."""
-        headers = {}
+        """Carrega os cabeçalhos originais do arquivo de entrada FASTA, na ordem que aparecem."""
+        headers = []
         with open(self.input_file, 'r') as f:
             for line in f:
                 if line.startswith(">"):
-                    header_line = line[1:].strip() 
-                    parsed = self.mapper.parse_fasta_header(header_line)
-
-                    if parsed and parsed.get('seq_id'):
-                        headers[parsed['seq_id']] = header_line
-                    else:
-
-                        headers[header_line.split('|')[0]] = header_line
+                    # Store the full header (without '>')
+                    header_line = line[1:].strip()
+                    headers.append(header_line)
         
-
         return headers
 
     def _parse_terl_output_header(self, header):
@@ -142,7 +136,6 @@ class TERLRunner:
         output_fasta_path = output_fasta_files[0]
         
         predictions = []
-        original_headers_list = list(self.original_headers.keys())
         
 
         i = 0 
@@ -156,7 +149,7 @@ class TERLRunner:
                     
                     if predicted_label:
 
-                        original_header = original_headers_list[i] if i < len(original_headers_list) else f"Seq_ID_Unknown_{i}"
+                        original_header = self.original_headers[i] if i < len(self.original_headers) else f"Seq_ID_Unknown_{i}"
                         
                         predictions.append({
                             "Sequence ID": original_header,
@@ -192,11 +185,17 @@ class TERLRunner:
             
             click.echo("🔄 Inserindo labels de verdade (Actual_Code/Label) via mapeamento...")
             
-
-
-            predictions_df_with_gt = self.mapper.add_actual_labels_to_predictions(str(output_csv_path), self.input_file)
+            # Call mapper and reload the updated CSV
+            self.mapper.add_actual_labels_to_predictions(str(output_csv_path), self.input_file, output_csv=str(output_csv_path))
             
-            df = predictions_df_with_gt # Atualiza o DF principal
+            # Reload the updated CSV
+            df = pd.read_csv(output_csv_path)
+            
+            if 'Actual_Label' in df.columns:
+                actual_count = df['Actual_Label'].notna().sum()
+                click.echo(f"✅ Coluna Actual_Label adicionada com {actual_count} valores preenchidos")
+            else:
+                click.echo("⚠️ ERRO: Coluna Actual_Label NÃO foi adicionada!")
         
         click.echo(f"📄 Arquivo de saída CSV FINAL salvo em: {output_csv_path}")
 

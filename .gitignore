@@ -39,6 +39,7 @@ fastaFile-*
 predictionsFile-*
 yoro_results/
 
+
 # # Arquivos temporários gerais (existentes no seu gitignore)
 # temp*
 # test*/*

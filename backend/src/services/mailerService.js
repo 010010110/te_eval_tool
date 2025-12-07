@@ -21,12 +21,16 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
 
     let attachments = [];
     let fileListHTML = '';
+    let metricsFiles = [];
+    let otherFiles = [];
 
     try {
         const stats = fs.statSync(outputDir);
         
         if (stats.isDirectory()) {
             const files = fs.readdirSync(outputDir);
+            const metricsKeywords = ['metrics', 'evaluation', 'report'];
+            
             attachments = files
                 .filter(file => {
                     try {
@@ -36,12 +40,37 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
                     }
                 })
                 .map(file => {
-                    fileListHTML += `<li><code>${file}</code></li>`;
+                    const isMetricsFile = metricsKeywords.some(keyword => 
+                        file.toLowerCase().includes(keyword)
+                    );
+                    
+                    if (isMetricsFile) {
+                        metricsFiles.push(file);
+                    } else {
+                        otherFiles.push(file);
+                    }
+                    
                     return {
                         filename: file,
                         path: path.join(outputDir, file)
                     };
                 });
+            
+            if (metricsFiles.length > 0) {
+                fileListHTML += '<strong>📊 Metrics & Reports:</strong><ul>';
+                metricsFiles.forEach(file => {
+                    fileListHTML += `<li style="color: #2196F3;"><code>${file}</code></li>`;
+                });
+                fileListHTML += '</ul>';
+            }
+            
+            if (otherFiles.length > 0) {
+                fileListHTML += '<strong>📁 Results & Data:</strong><ul>';
+                otherFiles.forEach(file => {
+                    fileListHTML += `<li><code>${file}</code></li>`;
+                });
+                fileListHTML += '</ul>';
+            }
         } else if (stats.isFile()) {
             const fileName = path.basename(outputDir);
             fileListHTML += `<li><code>${fileName}</code></li>`;
@@ -60,7 +89,9 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
     const resultsPathDisplay = path.normalize(outputDir).replace(/^(\.\.\/data\/|\/app\/data\/)/, 'results/');
 
     const attachmentMessage = attachments.length > 0
-        ? `Os **${attachments.length}** arquivos de resultado estão anexados diretamente a este e-mail:`
+        ? (metricsFiles.length > 0 
+            ? `✅ **${attachments.length} arquivo(s)** anexado(s), incluindo **${metricsFiles.length} arquivo(s) de métricas/relatórios**:`
+            : `Os **${attachments.length}** arquivos de resultado estão anexados diretamente a este e-mail:`)
         : `O job foi concluído, mas nenhum arquivo foi encontrado para anexar no diretório ${resultsPathDisplay}.`;
 
     const mailOptions = {
@@ -123,7 +154,7 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
                             
                             <p><strong>${attachmentMessage}</strong></p>
                             
-                            ${attachments.length > 0 ? `<ul class="attachment-list">${fileListHTML}</ul>` : ''}
+                            ${fileListHTML ? `<div style="margin: 20px 0;">${fileListHTML}</div>` : ''}
 
                             <br>
                             
@@ -143,8 +174,10 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
         if (attachments.length > 0) {
             console.log(`[MAILER INFO] Arquivos anexados: ${attachments.map(a => a.filename).join(', ')}`);
         }
+        return { success: true, info };
     } catch (error) {
         console.error(`[MAILER ERROR] Falha ao enviar e-mail para ${recipientEmail}: ${error.message}`);
+        return { success: false, error };
     }
 };
 
