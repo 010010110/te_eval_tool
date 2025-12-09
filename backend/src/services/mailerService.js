@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => {
+exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir, cliParams = null) => {
 
     if (!recipientEmail) {
         console.warn(`[MAILER WARNING] Tentativa de enviar e-mail sem endereço de destinatário.`);
@@ -23,6 +23,7 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
     let fileListHTML = '';
     let metricsFiles = [];
     let otherFiles = [];
+    let cliParamsHTML = '';
 
     try {
         const stats = fs.statSync(outputDir);
@@ -82,6 +83,23 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
     } catch (error) {
         console.error(`[MAILER ERROR] Falha ao ler o diretório/arquivo de saída ${outputDir}: ${error.message}`);
         fileListHTML = '<li>Não foi possível listar os arquivos devido a um erro no servidor.</li>';
+    }
+
+    // Build CLI parameters section if provided
+    if (cliParams && Object.keys(cliParams).length > 0) {
+        cliParamsHTML = `
+            <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #2196F3; border-radius: 4px;">
+                <h4 style="margin-top: 0; color: #333;">⚙️ CLI Parameters Used:</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    ${Object.entries(cliParams)
+                        .filter(([key, value]) => value !== undefined && value !== null && value !== '')
+                        .map(([key, value]) => `
+                    <tr>
+                        <td style="padding: 6px; border: 1px solid #ddd; font-weight: bold; background-color: #e8e8e8; color: #555;"><code>${key}</code></td>
+                        <td style="padding: 6px; border: 1px solid #ddd;"><code>${value}</code></td>
+                    </tr>`).join('')}
+                </table>
+            </div>`;
     }
 
     const subject = `✅ Job '${jobType}' Concluído com Sucesso!`;
@@ -151,6 +169,8 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir) => 
                             <h3 style="color: #4CAF50;">Processamento da TE Evaluation Tool</h3>
                             
                             <p>O seu job de <b>${jobType.toUpperCase()}</b> foi concluído com sucesso e os resultados estão prontos para análise.</p>
+                            
+                            ${cliParamsHTML}
                             
                             <p><strong>${attachmentMessage}</strong></p>
                             

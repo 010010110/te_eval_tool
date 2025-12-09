@@ -29,7 +29,11 @@ const executeJob = (job) => {
             // only delete output results after the mail is successfully sent.
             if (args.notificationEmail) {
                 try {
-                    const mailResult = await mailerService.sendSuccessNotification(args.notificationEmail, command, path.resolve(outputDir));
+                    // Prepare CLI parameters to send in email
+                    const cliParams = { ...args };
+                    delete cliParams.notificationEmail; // Don't show email in params
+                    
+                    const mailResult = await mailerService.sendSuccessNotification(args.notificationEmail, command, path.resolve(outputDir), cliParams);
                     if (!mailResult || !mailResult.success) {
                         console.warn(`[MAILER] Email send returned non-success for job ${jobId}. Will not remove outputs.`);
                     } else {

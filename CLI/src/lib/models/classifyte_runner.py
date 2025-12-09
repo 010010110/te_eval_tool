@@ -215,6 +215,22 @@ class ClassifyTERunner:
                             shutil.rmtree(temp_file)
                         else:
                             temp_file.unlink()
+                
+                # Clean ClassifyTE outputs folder
+                outputs_dir = Path("./src/models/ClassifyTE/outputs")
+                if outputs_dir.exists():
+                    for output_file in outputs_dir.iterdir():
+                        try:
+                            if output_file.is_file():
+                                output_file.unlink()
+                                if self.verbose:
+                                    click.echo(f"   Removido: {output_file}")
+                            elif output_file.is_dir():
+                                shutil.rmtree(output_file)
+                                if self.verbose:
+                                    click.echo(f"   Removido diretório: {output_file}")
+                        except Exception as e:
+                            click.echo(f"   ⚠️ Erro ao remover {output_file}: {e}")
 
 
             if not self.skip_evaluation:
