@@ -69,7 +69,11 @@ def validate(ctx, input_file, format_type, detailed, verbose):
               help='Algoritmo hierárquico (ClassifyTE)')
 @click.option('--model-file', help='Arquivo do modelo (.pkl, DS3 ou diretório da ferramenta)')
 @click.option('--node-file', default='node.txt', help='Arquivo de nós hierárquicos')
-@click.option('--skip-evaluation', is_flag=True,
+@click.option('--window', type=int, default=50000, help='Window size (YORO)')
+@click.option('--threads', type=int, default=None, help='Threads to use (YORO, optional)')
+@click.option('--threshold', type=float, default=0.8, help='Prediction threshold (YORO)')
+@click.option('--cycles', type=int, default=1, help='Number of cycles (YORO)')
+@click.option('--skip-evaluation', is_flag=True, 
               help='Pular avaliação automática de métricas')
 @click.option('--clean', is_flag=True, help='Limpar arquivos temporários após execução')
 @click.option('--verbose', '-v', is_flag=True, help='Modo verboso')
@@ -77,7 +81,8 @@ def validate(ctx, input_file, format_type, detailed, verbose):
               help='Mapear automaticamente labels do FASTA para avaliação')
 @click.pass_context
 def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
-        skip_evaluation, clean, verbose, auto_label):
+    window, threads, threshold, cycles,
+    skip_evaluation, clean, verbose, auto_label):
     """Executar classificação usando ambiente específico do modelo"""
     
     if not verbose:
@@ -99,6 +104,13 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
     elif model == 'inpactor2' and not model_file:
         # Caminho padrão para o Inpactor2
         model_file = './src/models/Inpactor2'
+
+    if model == 'classifyte' and model_file:
+        from pathlib import Path
+        model_path = Path(model_file)
+        if model_path.is_absolute() or str(model_file).startswith('/'):
+            # Extract just the filename for ClassifyTE
+            model_file = model_path.name
 
     runner_class = MODEL_RUNNERS[model]
     
@@ -131,6 +143,43 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
             runner_kwargs['node_file'] = node_file
 
         runner = runner_class(**runner_kwargs)
+        if model == 'terl':
+            runner = runner_class(
+                python_path=EnvironmentManager().get_python_path(model),
+                input_file=input_file,
+                output_dir=output_dir,
+                model_file=model_file,
+                verbose=verbose,
+                skip_evaluation=skip_evaluation
+            )
+        elif model == 'yoro': 
+            runner = runner_class(
+                python_path=EnvironmentManager().get_python_path(model),
+                input_file=input_file,
+                output_dir=output_dir,
+                model_file=model_file,
+                verbose=verbose,
+                skip_evaluation=skip_evaluation,
+                clean_temp=clean,
+                auto_label=auto_label,
+                window=window,
+                threads=threads,
+                threshold=threshold,
+                cycles=cycles
+            )
+        else:
+            runner = runner_class(
+                python_path=EnvironmentManager().get_python_path(model),
+                input_file=input_file,
+                output_dir=output_dir,
+                algorithm=algorithm,
+                model_file=model_file,
+                node_file=node_file,
+                verbose=verbose,
+                clean_temp=clean,
+                auto_label=auto_label,
+                skip_evaluation=skip_evaluation
+            )
         
         click.echo(f"🔬 Executando {model} com {input_file}")
         click.echo(f"📁 Resultados em: {output_dir}")

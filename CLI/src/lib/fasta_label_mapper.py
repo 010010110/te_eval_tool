@@ -344,7 +344,7 @@ class FASTALabelMapper:
     def process_fasta_file(self, fasta_file, output_csv=None):
         """
         Processa arquivo FASTA completo e gera CSV com mapeamentos.
-        Garante que 'sequence_id' seja o ID PURO para o MERGE.
+        Usa o header completo (sem '>') como sequence_id para match com ClassifyTE.
         """
         
         mappings = []
@@ -354,6 +354,8 @@ class FASTALabelMapper:
                 for line in f:
                     if line.startswith('>'):
                         header = line.strip()
+                        # Remove '>' and use full header as sequence_id
+                        full_header = header[1:].strip() if header.startswith('>') else header.strip()
                         
 
                         parsed = self.parse_fasta_header(header)
@@ -365,7 +367,7 @@ class FASTALabelMapper:
                         hierarchical_label = self.hierarchy_map.get(hierarchical_code, 'Unknown') if hierarchical_code else 'Unknown'
                         
                         mapping = {
-                            'sequence_id': parsed['seq_id'], # ID PURO (ex: ATRAN)
+                            'sequence_id': full_header, # FULL HEADER to match ClassifyTE output
                             'original_header': header,
                             'class_level': parsed['class_level'],
                             'order_level': parsed['order_level'], 
@@ -397,12 +399,39 @@ class FASTALabelMapper:
         Isto resolve o problema de 79.5% de sucesso, garantindo 100% de sucesso.
         """
         
+        import sys
+        import os
+        
+        # Setup debug file output
+        output_dir = os.path.dirname(predictions_csv)
+        debug_file = os.path.join(output_dir, 'debug_mapper.txt')
+        
+        def log(msg):
+            with open(debug_file, 'a') as f:
+                f.write(msg + '\n')
+            print(msg, file=sys.stderr)
+        
+        log("=" * 80)
+        log(f"🔍 [DEBUG] Iniciando add_actual_labels_to_predictions")
+        log(f"   predictions_csv: {predictions_csv}")
+        log(f"   fasta_file: {fasta_file}")
+        log(f"   output_csv: {output_csv}")
 
         predictions_df = pd.read_csv(predictions_csv)
-        
+        log(f"   Predições carregadas: {len(predictions_df)} linhas")
+        log(f"   Colunas: {list(predictions_df.columns)}")
+        log(f"   Primeiras 3 IDs de predições:")
+        for i, seq_id in enumerate(predictions_df['Sequence ID'].head(3)):
+            log(f"      [{i}] '{seq_id}'")
 
 
         mappings_df = self.process_fasta_file(fasta_file)
+        log(f"   Mapeamentos processados: {len(mappings_df)} sequências")
+        
+        # Save debug mappings
+        debug_mappings_file = os.path.join(output_dir, 'debug_fasta_mappings.csv')
+        mappings_df.to_csv(debug_mappings_file, index=False)
+        log(f"   Mapeamentos salvos em: {debug_mappings_file}")
         
 
         gt_cols = mappings_df[['sequence_id', 'hierarchical_code', 'hierarchical_label', 'mapping_success']]
@@ -410,6 +439,9 @@ class FASTALabelMapper:
 
         gt_cols.columns = ['Sequence ID', 'Actual_Code', 'Actual_Label', 'GT_Mapping_Success']
         
+        log(f"   Primeiras 3 IDs de mapeamento:")
+        for i, seq_id in enumerate(gt_cols['Sequence ID'].head(3)):
+            log(f"      [{i}] '{seq_id}'")
 
 
         merged_df = pd.merge(
@@ -420,6 +452,18 @@ class FASTALabelMapper:
             suffixes=('_pred', '_actual') # Adiciona sufixos para evitar colisões
         )
         
+        log(f"   Após merge: {len(merged_df)} linhas")
+        log(f"   Colunas após merge: {list(merged_df.columns)}")
+        
+        # Check if merge was successful
+        if 'Actual_Code' in merged_df.columns:
+            filled = merged_df['Actual_Code'].notna().sum()
+            log(f"   ✅ Merge OK: {filled}/{len(merged_df)} linhas com Actual_Code preenchido")
+            log(f"   Primeiras 3 linhas após merge:")
+            for i, row in merged_df[['Sequence ID', 'Actual_Code', 'Actual_Label']].head(3).iterrows():
+                log(f"      [{i}] ID='{row['Sequence ID']}', Code='{row['Actual_Code']}', Label='{row['Actual_Label']}'")
+        else:
+            log(f"   ❌ ERRO: Coluna Actual_Code não encontrada após merge!")
 
         predictions_df = merged_df
         

@@ -11,7 +11,8 @@ from lib.fasta_label_mapper import FASTALabelMapper
 class YORORunner:
 
     
-    def __init__(self, python_path, model_file, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False):
+    def __init__(self, python_path, model_file, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False,
+                 window=50000, threads=None, threshold=0.8, cycles=1):
         self.python_path = python_path
         self.model_file = model_file
         self.input_file = input_file
@@ -20,8 +21,11 @@ class YORORunner:
         self.clean_temp = clean_temp
         self.auto_label = auto_label
         self.skip_evaluation = skip_evaluation
-        self.clean_temp = clean_temp 
-        self.auto_label = auto_label
+        # YORO-specific runtime options
+        self.window = window
+        self.threads = threads
+        self.threshold = threshold
+        self.cycles = cycles
         
         if self.verbose:
             click.echo(f"🛠️ YORO Runner configurado com modelo: {self.model_file}")
@@ -62,10 +66,13 @@ class YORORunner:
             with open(input_path, 'r') as f_in, open(sanitized_fasta_path, 'w') as f_out:
                 for line in f_in:
                     if line.startswith(">"):
+                        # Store the full header (without '>')
                         original_header = line.strip()[1:]
-                        original_id = original_header.split()[0] 
-                        sanitized_id = original_id.replace('#', '_').replace('|', '_')
-                        original_ids.append(original_id)
+                        original_ids.append(original_header)
+                        
+                        # Sanitize only the first token for YORO compatibility
+                        first_token = original_header.split()[0]
+                        sanitized_id = first_token.replace('#', '_').replace('|', '_')
                         
                         rest_of_header = line.strip()[1:].partition(' ')[2]
                         if rest_of_header: f_out.write(f">{sanitized_id} {rest_of_header}\n")
@@ -88,8 +95,23 @@ class YORORunner:
             "-f", sanitized_fasta_abs,
             "-d", temp_dir_abs,
             "-m", str(model_path),
-            # "-l", "50000"
         ]
+
+        # Append YORO-specific flags understood by pipelineDomain.py
+        try:
+            if self.window is not None:
+                cmd_classify.extend(["-w", str(int(self.window))])
+        except Exception:
+            pass
+
+        if self.threads is not None:
+            cmd_classify.extend(["-p", str(int(self.threads))])
+
+        if self.threshold is not None:
+            cmd_classify.extend(["-t", str(float(self.threshold))])
+
+        if self.cycles is not None:
+            cmd_classify.extend(["-c", str(int(self.cycles))])
         
         if self.verbose: click.echo(f"  Comando: {' '.join(cmd_classify)}")
 
@@ -160,12 +182,19 @@ class YORORunner:
                 tree_file = Path(__file__).parents[2] / 'nodes' / 'tree.txt'
                 mapper = FASTALabelMapper(tree_file=str(tree_file))
 
-                map_success = mapper.add_actual_labels_to_predictions(
+                # Call mapper to update the CSV file
+                mapper.add_actual_labels_to_predictions(
                     str(final_file.resolve()),
-                    str(Path(self.input_file).resolve())
+                    str(Path(self.input_file).resolve()),
+                    output_csv=str(final_file.resolve())
                 )
-                if map_success: click.echo("✅ Labels mapeados com sucesso!")
-                else: click.echo("⚠️ Falha no mapeamento de labels.")
+
+                df_check = pd.read_csv(final_file)
+                if 'Actual_Label' in df_check.columns and df_check['Actual_Label'].notna().any():
+                    actual_count = df_check['Actual_Label'].notna().sum()
+                    click.echo(f"✅ Labels mapeados com sucesso! {actual_count} valores preenchidos")
+                else:
+                    click.echo("⚠️ Falha no mapeamento de labels.")
             except Exception as e:
                 click.echo(f"⚠️ Erro no mapeamento automático: {str(e)}")
         
