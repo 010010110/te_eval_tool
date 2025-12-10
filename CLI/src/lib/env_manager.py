@@ -8,8 +8,10 @@ import shutil
 
 class EnvironmentManager:
     def __init__(self):
-        # Resolve para caminho absoluto
-        self.envs_dir = Path("model_envs").resolve()
+        # Resolve para caminho absoluto baseado na estrutura do projeto
+        # env_manager.py está em CLI/src/lib/, então model_envs está em CLI/src/model_envs
+        base_dir = Path(__file__).parent.parent  # CLI/src/
+        self.envs_dir = (base_dir / "model_envs").resolve()
         self.envs_dir.mkdir(exist_ok=True)
         
         self.model_configs = {

@@ -119,6 +119,10 @@ const YORO_MODELS = [
   'AAqqYOLOqqdomainqqV25'
 ]
 
+const INPACTOR2_MODELS = [
+  'Inpactor2'
+]
+
 function showElement(id, show=true){
   const el = document.getElementById(id)
   if(!el) return
@@ -166,6 +170,9 @@ function wireRunModelOptions(){
     } else if(model === 'yoro'){
       setSelectOptions(modelFileSelect, YORO_MODELS)
       showElement('yoroOptions', true)
+    } else if(model === 'inpactor2'){
+      setSelectOptions(modelFileSelect, INPACTOR2_MODELS)
+      showElement('inpactor2Options', true)
     }
     // Enable inputs for visible model-specific section and disable inputs in hidden sections
     document.querySelectorAll('.model-specific').forEach(section => {

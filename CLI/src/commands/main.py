@@ -70,9 +70,15 @@ def validate(ctx, input_file, format_type, detailed, verbose):
 @click.option('--model-file', help='Arquivo do modelo (.pkl, DS3 ou diretório da ferramenta)')
 @click.option('--node-file', default='node.txt', help='Arquivo de nós hierárquicos')
 @click.option('--window', type=int, default=50000, help='Window size (YORO)')
-@click.option('--threads', type=int, default=None, help='Threads to use (YORO, optional)')
+@click.option('--threads', type=int, default=None, help='Threads to use (YORO/Inpactor2)')
 @click.option('--threshold', type=float, default=0.8, help='Prediction threshold (YORO)')
-@click.option('--cycles', type=int, default=1, help='Number of cycles (YORO)')
+@click.option('--cycles', type=int, default=1, help='Number of cycles (YORO/Inpactor2)')
+@click.option('--max-len', type=int, default=15000, help='Maximum LTR length (Inpactor2)')
+@click.option('--min-len', type=int, default=1000, help='Minimum LTR length (Inpactor2)')
+@click.option('--annotate', type=click.Choice(['yes', 'no']), default='no', help='Use RepeatMasker annotation (Inpactor2)')
+@click.option('--tg-ca', type=click.Choice(['yes', 'no']), default='no', help='Keep only TG-CA-LTRs (Inpactor2)')
+@click.option('--tsd', type=click.Choice(['yes', 'no']), default='no', help='Keep only elements with TSD (Inpactor2)')
+@click.option('--curated', type=click.Choice(['yes', 'no']), default='yes', help='Keep only intact elements (Inpactor2)')
 @click.option('--skip-evaluation', is_flag=True, 
               help='Pular avaliação automática de métricas')
 @click.option('--clean', is_flag=True, help='Limpar arquivos temporários após execução')
@@ -81,7 +87,7 @@ def validate(ctx, input_file, format_type, detailed, verbose):
               help='Mapear automaticamente labels do FASTA para avaliação')
 @click.pass_context
 def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
-    window, threads, threshold, cycles,
+    window, threads, threshold, cycles, max_len, min_len, annotate, tg_ca, tsd, curated,
     skip_evaluation, clean, verbose, auto_label):
     """Executar classificação usando ambiente específico do modelo"""
     
@@ -166,6 +172,25 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
                 threads=threads,
                 threshold=threshold,
                 cycles=cycles
+            )
+        elif model == 'inpactor2':
+            runner = runner_class(
+                python_path=EnvironmentManager().get_python_path(model),
+                input_file=input_file,
+                output_dir=output_dir,
+                model_file=model_file,
+                verbose=verbose,
+                skip_evaluation=skip_evaluation,
+                clean_temp=clean,
+                auto_label=auto_label,
+                threads=threads,
+                cycles=cycles,
+                max_len=max_len,
+                min_len=min_len,
+                annotate=annotate,
+                tg_ca=tg_ca,
+                tsd=tsd,
+                curated=curated
             )
         else:
             runner = runner_class(

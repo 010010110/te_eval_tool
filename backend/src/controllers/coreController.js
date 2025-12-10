@@ -35,6 +35,7 @@ exports.run = async (req, res) => {
         
         const CLASSIFYTE_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'ClassifyTE', 'models');
         const YORO_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'YORO', 'models');
+        const INPACTOR2_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'Inpactor2');
 
         if (!args.modelFile) {
             if (args.model === 'classifyte' || !args.model) {
@@ -45,6 +46,9 @@ exports.run = async (req, res) => {
             }
             else if (args.model === 'yoro') {
                 args.modelFile = path.join(YORO_MODELS_DIR, 'AAqqYOLOqqdomainqqV25.hdf5');
+            }
+            else if (args.model === 'inpactor2') {
+                args.modelFile = INPACTOR2_DIR;
             }
         } 
         
@@ -81,6 +85,18 @@ exports.run = async (req, res) => {
                     let candidate = args.modelFile;
                     if (!candidate.endsWith('.hdf5')) candidate = candidate + '.hdf5';
                     args.modelFile = path.join(YORO_MODELS_DIR, candidate);
+                }
+            } catch (e) {
+                // If anything goes wrong, leave args.modelFile as provided.
+            }
+        }
+        else if (args.model === 'inpactor2') {
+            // For Inpactor2, modelFile should be the directory path
+            // If user provides just 'Inpactor2', resolve to full directory path
+            try {
+                const isAbsolute = path.isAbsolute(args.modelFile);
+                if (!isAbsolute && args.modelFile === 'Inpactor2') {
+                    args.modelFile = INPACTOR2_DIR;
                 }
             } catch (e) {
                 // If anything goes wrong, leave args.modelFile as provided.
