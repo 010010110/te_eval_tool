@@ -131,6 +131,15 @@
                             <select name="modelFile" id="modelFileSelect">
                                 </select>
                         </label>
+
+                        <div id="classifyteOpts" class="model-specific hidden">
+                            <div id="algorithmGroup">
+                                <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
+                                <select id="algorithm" name="algorithm">
+                                    <option value="lcpnb" selected>LCPNB</option>
+                                    <option value="nllcpn">NLLCPN</option>
+                                </select>
+                        </label>
                             <h4>Server behavior</h4>
                             <ul>
                                 <li>The API queues jobs and returns immediately with a job id and output path.</li>
