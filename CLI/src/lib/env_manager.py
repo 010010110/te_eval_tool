@@ -1,4 +1,3 @@
-# env_manager.py - Gerenciador de ambientes
 import subprocess
 import sys
 from pathlib import Path
@@ -8,8 +7,6 @@ import shutil
 
 class EnvironmentManager:
     def __init__(self):
-        # Resolve para caminho absoluto baseado na estrutura do projeto
-        # env_manager.py está em CLI/src/lib/, então model_envs está em CLI/src/model_envs
         base_dir = Path(__file__).parent.parent  # CLI/src/
         self.envs_dir = (base_dir / "model_envs").resolve()
         self.envs_dir.mkdir(exist_ok=True)
@@ -22,7 +19,7 @@ class EnvironmentManager:
             },
             "terl": {
                 "env_name": "terl_env",
-                "requirements_file": "TERL-master/requirements.txt",
+                "requirements": ["numpy", "tensorflow~=2.16.1", "matplotlib", "scikit-learn", "seaborn"],
                 "python_version": "3.9" 
             },
             "yoro": {
@@ -39,7 +36,7 @@ class EnvironmentManager:
                 "requirements": [
                     "tensorflow",
                     "protobuf",
-                    "numpy",  # <--- FORÇANDO VERSÃO ESPECÍFICA ESTÁVEL
+                    "numpy",
                     "biopython", 
                     "pandas",
                     "scikit-learn", 
@@ -83,8 +80,6 @@ class EnvironmentManager:
         elif "requirements" in config:
             for req in config["requirements"]:
                 print(f"   Instalando {req}...")
-                # A flag --no-deps pode ser perigosa, então usamos --force-reinstall se necessário
-                # Mas aqui apenas rodamos normal
                 subprocess.run([str(pip_path), "install", req], check=True)
         
         self._save_env_config(env_path, config)
