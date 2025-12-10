@@ -17,7 +17,8 @@ except ImportError:
 
 class Inpactor2Runner:
     
-    def __init__(self, python_path, model_file, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False, **kwargs):
+    def __init__(self, python_path, model_file, input_file, output_dir, verbose=False, clean_temp=False, auto_label=False, skip_evaluation=False, 
+                 threads=None, cycles=1, max_len=15000, min_len=1000, annotate='no', tg_ca='no', tsd='no', curated='yes', **kwargs):
         self.python_path = python_path
         self.model_file = model_file
         self.input_file = input_file
@@ -26,6 +27,14 @@ class Inpactor2Runner:
         self.clean_temp = clean_temp
         self.auto_label = auto_label
         self.skip_evaluation = skip_evaluation
+        self.threads = threads if threads else 4
+        self.cycles = cycles
+        self.max_len = max_len
+        self.min_len = min_len
+        self.annotate = annotate
+        self.tg_ca = tg_ca
+        self.tsd = tsd
+        self.curated = curated
         
         if self.verbose:
             click.echo(f"🛠️ Inpactor2 Runner inicializado (Modo Não-Invasivo).")
@@ -89,8 +98,19 @@ class Inpactor2Runner:
             str(REAL_SCRIPT_PATH),
             "-f", str(sanitized_fasta_path),
             "-o", str(temp_dir),
-            "-t", "4"
+            "-t", str(self.threads),
+            "-C", str(self.cycles),
+            "-m", str(self.max_len),
+            "-n", str(self.min_len),
+            "-a", self.annotate,
+            "-i", self.tg_ca,
+            "-d", self.tsd,
+            "-c", self.curated
         ]
+        
+        if self.verbose:
+            cmd.append("-V")
+            cmd.append("yes")
 
         if self.verbose: 
             click.echo(f"💻 Comando Wrapper: {' '.join(cmd)}")
@@ -120,22 +140,40 @@ class Inpactor2Runner:
             return False
 
        
-        output_files = list(temp_dir.glob("*classification.tab")) + list(temp_dir.glob("*.tab")) + list(temp_dir.glob("*.csv"))
+        # Look for Inpactor2 output files (Inpactor2_predictions.tab is the main output)
+        predictions_file = temp_dir / "Inpactor2_predictions.tab"
+        
+        if self.verbose:
+            click.echo(f"🔍 Procurando arquivo de predições: {predictions_file}")
+            all_files = list(temp_dir.iterdir())
+            click.echo(f"   Arquivos no diretório: {[f.name for f in all_files]}")
+        
         raw_output_file = None
-        candidates = [f for f in output_files if f.stat().st_size > 10 and f.name != "input_sanitized.fasta"] 
-        if candidates:
-            raw_output_file = max(candidates, key=lambda p: p.stat().st_mtime)
+        
+        # First, try the standard Inpactor2 output filename
+        if predictions_file.exists() and predictions_file.stat().st_size > 10:
+            raw_output_file = predictions_file
+            if self.verbose:
+                click.echo(f"   ✅ Encontrado: {raw_output_file.name}")
+        else:
+            # Fallback: search for any .tab files
+            output_files = list(temp_dir.glob("*.tab"))
+            candidates = [f for f in output_files if f.stat().st_size > 10 and f.name != "input_sanitized.fasta"] 
+            if candidates:
+                raw_output_file = max(candidates, key=lambda p: p.stat().st_mtime)
+                if self.verbose:
+                    click.echo(f"   ⚠️ Usando fallback: {raw_output_file.name}")
         
         results = []
         
         if not raw_output_file:
+            click.echo("⚠️ Aviso: Nenhum arquivo de saída válido encontrado.")
+            click.echo(f"   Arquivos no diretório: {list(temp_dir.iterdir())}")
             if "There is no LTR retrotransposons" in result.stdout:
-                click.echo("⚠️ Aviso: O Inpactor2 rodou com sucesso, mas não encontrou LTRs válidos.")
-                click.echo("   Gerando CSV com 'Rejected_Inpactor2'.")
-            else:
-                click.echo(f"❌ Erro: Nenhum arquivo gerado e sem aviso claro de rejeição.")
-                click.echo(f"--- STDOUT ---\n{result.stdout[-1000:]}")
-                return False
+                click.echo("   Inpactor2 não encontrou LTRs válidos.")
+            click.echo("   Gerando CSV com 'Rejected_Inpactor2'.")
+            if self.verbose:
+                click.echo(f"--- STDOUT (últimos 1000 chars) ---\n{result.stdout[-1000:]}")
         else:
             click.echo(f"🔄 Processando resultados de: {raw_output_file.name}")
             try:

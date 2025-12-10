@@ -9,7 +9,6 @@
 </head>
 
 <body>
-<<<<<<< Updated upstream
         <div class="app-topbar">
             <div class="app-brand">
                 <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#02121a;font-weight:700">TE</div>
@@ -95,50 +94,6 @@
                             <code>autoLabel=true</code> for /run. You can still pass these fields but the server may
                             override them.
                         </li>
-=======
-    <div class="app-topbar">
-        <div class="app-brand">
-            <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#02121a;font-weight:700">TE</div>
-            <div>
-                <h1>TE Eval Tool</h1>
-                <div class="muted" style="font-size:12px">Research UI — run | map-labels | evaluate</div>
-            </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center">
-            <div class="muted">v1.0.0</div>
-        </div>
-    </div>
-    <div class="bg-scanline" aria-hidden="true"></div>
-
-    <main>
-        <div class="layout">
-            <aside class="sidebar">
-                <div class="project">
-                    <h4>Project</h4>
-                    <div style="margin-top:6px" class="muted">
-                        <strong>Researcher:</strong> Gabriel Carneiro de Arruda
-                    </div>
-                    <div style="margin-top:6px" class="muted">
-                        <strong>Advisor:</strong> Prof. Dr. Adriano Ferrasa
-                    </div>
-                    <div style="margin-top:6px" class="muted">
-                        <strong>Co-Advisor:</strong> Prof. Dr. Alceu e Souza Britto Jr.
-                    </div>
-                    <div style="margin-top:6px" class="muted">
-                        <strong>University:</strong> Universidade Estadual de Ponta Grossa
-                    </div>
-                    <div style="margin-top:6px" class="muted">
-                        <strong>Program:</strong> Applied Computing Graduate Program
-                    </div>
-                </div>
-                <div class="project">
-                    <h4>Models</h4>
-                    <ul style="margin:8px 0 0 12px;color:var(--muted)">
-                        <li>YORO</li>
-                        <li>ClassifyTE</li>
-                        <li>TERL</li>
-                        <li>Inpactor2</li>
->>>>>>> Stashed changes
                     </ul>
                 </div>
             </aside>
@@ -171,13 +126,11 @@
                                 <li><strong>Inpactor2-specific</strong> options: threads, cycles, maxLen, minLen, annotate, tgCa, tsd, curated.</li>
                             </ul>
 
-<<<<<<< Updated upstream
                     <div id="modelOptions">
                         <label id="modelFileLabel">modelFile (optional):
                             <select name="modelFile" id="modelFileSelect">
                                 </select>
                         </label>
-=======
                             <h4>Server behavior</h4>
                             <ul>
                                 <li>The API queues jobs and returns immediately with a job id and output path.</li>
@@ -187,7 +140,6 @@
                                 </li>
                             </ul>
                         </div>
->>>>>>> Stashed changes
 
                         <form id="runForm">
                             <label>Notification email:
@@ -318,7 +270,6 @@
                                 clean=true, verbose=true and autoLabel=true for /run).
                             </div>
 
-<<<<<<< Updated upstream
                         <div id="terlOpts" class="model-specific hidden">
                             <div class="models-list small">
                                 <strong>Available TERL model folders:</strong>
@@ -359,11 +310,57 @@
                             </div>
                         </div>
                         
-=======
                             <button type="submit">Submit /run</button>
                             <pre class="response" id="runResult"></pre>
                         </form>
->>>>>>> Stashed changes
+
+                        <div id="inpactor2Options" class="form-section disabled-field model-specific hidden"
+                            style="margin-top:12px;">
+                            <h3>Inpactor2 options (only for model = Inpactor2)</h3>
+                            
+                            <label for="inpactor2Threads">Threads (threads)</label>
+                            <input type="number" id="inpactor2Threads" name="threads" value="4" min="1">
+
+                            <label for="inpactor2Cycles">Cycles (cycles)</label>
+                            <input type="number" id="inpactor2Cycles" name="cycles" value="1" min="1" max="5">
+
+                            <label for="maxLen">Maximum LTR length (maxLen)</label>
+                            <input type="number" id="maxLen" name="maxLen" value="15000" min="1" max="50000">
+
+                            <label for="minLen">Minimum LTR length (minLen)</label>
+                            <input type="number" id="minLen" name="minLen" value="1000" min="1" max="50000">
+
+                            <label for="annotate">Annotate with RepeatMasker (annotate)</label>
+                            <select id="annotate" name="annotate">
+                                <option value="no" selected>no</option>
+                                <option value="yes">yes</option>
+                            </select>
+
+                            <label for="tgCa">Keep only TG-CA-LTRs (tgCa)</label>
+                            <select id="tgCa" name="tgCa">
+                                <option value="no" selected>no</option>
+                                <option value="yes">yes</option>
+                            </select>
+
+                            <label for="tsd">Keep only elements with TSD (tsd)</label>
+                            <select id="tsd" name="tsd">
+                                <option value="no" selected>no</option>
+                                <option value="yes">yes</option>
+                            </select>
+
+                            <label for="curated">Keep only intact elements (curated)</label>
+                            <select id="curated" name="curated">
+                                <option value="yes" selected>yes</option>
+                                <option value="no">no</option>
+                            </select>
+
+                            <div class="models-list">
+                                <strong>Available Inpactor2 installation:</strong>
+                                <ul id="inpactor2ModelList">
+                                    <li>Inpactor2</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="mapTab" class="card tabContent">
@@ -427,7 +424,6 @@
                             <pre class="response" id="evalResult"></pre>
                         </form>
                     </div>
-<<<<<<< Updated upstream
 
                     <button type="submit">Submit /map-labels</button>
                     <pre class="response" id="mapResult"></pre>
@@ -509,8 +505,6 @@
                     <li>When using notifications the API attempts to email result links and attachments; outputs are removed from server
                 </ol>
             </div>
-=======
->>>>>>> Stashed changes
                 </section>
 
                 <section class="info">

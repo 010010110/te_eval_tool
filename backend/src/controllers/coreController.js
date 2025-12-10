@@ -7,21 +7,20 @@ const CLI_ROOT_PATH = path.join(__dirname, '..', '..', '..', 'CLI');
 
 
 const TERL_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'TERL', 'Models');
-const INPACTOR2_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'Inpactor2');
 
 exports.run = async (req, res) => {
     let tempFilePath = null;
     let runOutputDir = null;
-    
+
     try {
         const args = req.body;
-        
+
         if (!req.file) {
             throw new Error("Arquivo FASTA de entrada (fastaFile) é obrigatório.");
         }
         tempFilePath = await fileService.saveFileStream(req.file);
-        args.input = tempFilePath; 
-       
+        args.input = tempFilePath;
+
         if (!args.output) {
             const timestamp = Date.now();
             const uniqueDirName = `run_${timestamp}`;
@@ -30,10 +29,13 @@ exports.run = async (req, res) => {
         } else {
             runOutputDir = args.output;
         }
-        
+
         if (args.model === 'inpactorDB') {
             args.model = 'inpactor2';
         }
+        const CLASSIFYTE_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'ClassifyTE', 'models');
+        const YORO_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'YORO', 'models');
+        const INPACTOR2_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'Inpactor2');
 
         if (!args.modelFile) {
             if (args.model === 'classifyte' || !args.model) {
@@ -42,24 +44,22 @@ exports.run = async (req, res) => {
             else if (args.model === 'terl') {
                 args.modelFile = path.join(TERL_MODELS_DIR, 'DS3');
             }
-            
+
             else if (args.model === 'inpactor2') {
                 args.modelFile = INPACTOR2_DIR;
             }
-        } 
-        
+        }
+
         else if (args.model === 'terl') {
             const shortNameRegex = /^DS[1-5]$/;
             const prefix = path.join(TERL_MODELS_DIR);
-            
-            if (shortNameRegex.test(args.modelFile) && 
+
+            if (shortNameRegex.test(args.modelFile) &&
                 !args.modelFile.startsWith(prefix)) {
-                
+
                 args.modelFile = path.join(prefix, args.modelFile);
             }
         }
-<<<<<<< Updated upstream
-=======
         else if (args.model === 'classifyte') {
             try {
                 const isAbsolute = path.isAbsolute(args.modelFile);
@@ -69,7 +69,7 @@ exports.run = async (req, res) => {
                     if (!candidate.endsWith('.pkl')) candidate = candidate + '.pkl';
                     args.modelFile = path.join(CLASSIFYTE_MODELS_DIR, candidate);
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         else if (args.model === 'yoro') {
             try {
@@ -80,7 +80,7 @@ exports.run = async (req, res) => {
                     if (!candidate.endsWith('.hdf5')) candidate = candidate + '.hdf5';
                     args.modelFile = path.join(YORO_MODELS_DIR, candidate);
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         else if (args.model === 'inpactor2') {
             // Força o diretório correto ignorando o texto do frontend se não for caminho absoluto
@@ -89,56 +89,51 @@ exports.run = async (req, res) => {
                 if (!isAbsolute) {
                     args.modelFile = INPACTOR2_DIR;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
->>>>>>> Stashed changes
         
         args.clean = true;
-        args.verbose = true;
-        args.autoLabel = true;
-        
-        const inputFilesForCleanup = [tempFilePath];
-        
-        const jobId = jobQueueService.addJob(
-            'run', 
-            args, 
-            inputFilesForCleanup,
-            runOutputDir
-        );
+    args.verbose = true;
+    args.autoLabel = true;
 
-        res.status(200).json({ 
-            message: "Classificação enfileirada com sucesso e será processada sequencialmente.", 
-            jobId: jobId,
-            status: "QUEUED",
-            outputDir: runOutputDir,
-            note: "Você receberá uma notificação por e-mail na conclusão."
-        });
-        
-    } catch (error) {
-        if (tempFilePath) {
-            await fileService.deleteFile(tempFilePath);
-        }
-        res.status(500).json({ 
-            message: "Falha no pré-processamento (upload ou configuração de entrada).", 
-            error: error.message 
-        });
+    const inputFilesForCleanup = [tempFilePath];
+
+    const jobId = jobQueueService.addJob(
+        'run',
+        args,
+        inputFilesForCleanup,
+        runOutputDir
+    );
+
+    res.status(200).json({
+        message: "Classificação enfileirada com sucesso e será processada sequencialmente.",
+        jobId: jobId,
+        status: "QUEUED",
+        outputDir: runOutputDir,
+        note: "Você receberá uma notificação por e-mail na conclusão."
+    });
+
+} catch (error) {
+    if (tempFilePath) {
+        await fileService.deleteFile(tempFilePath);
     }
+    res.status(500).json({
+        message: "Falha no pré-processamento (upload ou configuração de entrada).",
+        error: error.message
+    });
 };
 
 exports.mapLabels = async (req, res) => {
     let fastaFilePath = null;
     let predictionsFilePath = null;
     let outputInfo = "Nenhum";
-    
+
     try {
         const args = req.body;
-<<<<<<< Updated upstream
-=======
 
         if (!args || !args.notificationEmail) {
             return res.status(400).json({ message: 'notificationEmail is required' });
         }
->>>>>>> Stashed changes
         const files = req.files;
 
         const inputFilesForCleanup = [];
@@ -147,7 +142,7 @@ exports.mapLabels = async (req, res) => {
             throw new Error("Arquivo FASTA é obrigatório (campo 'fastaFile').");
         }
         fastaFilePath = await fileService.saveFileStream(files.fastaFile[0]);
-        args.fasta = fastaFilePath; 
+        args.fasta = fastaFilePath;
         inputFilesForCleanup.push(fastaFilePath);
 
         if (files.predictionsFile && files.predictionsFile.length > 0) {
@@ -160,46 +155,46 @@ exports.mapLabels = async (req, res) => {
 
         args.validateOnly = isValidateOnly;
         args.verbose = true;
-        
+
         if (!args.treeFile) {
-             args.treeFile = 'src/nodes/tree.txt'; 
+            args.treeFile = 'src/nodes/tree.txt';
         }
 
         if (isValidateOnly) {
-             delete args.output;
-             outputInfo = "Apenas Validação - Sem arquivo de saída";
-        } 
+            delete args.output;
+            outputInfo = "Apenas Validação - Sem arquivo de saída";
+        }
         else if (!args.output) {
-             const defaultOutput = `${path.basename(fastaFilePath, path.extname(fastaFilePath))}_mapped.csv`;
-             const outputPath = path.join(BASE_RESULTS_DIR, defaultOutput);
-             args.output = outputPath;
-             outputInfo = outputPath;
+            const defaultOutput = `${path.basename(fastaFilePath, path.extname(fastaFilePath))}_mapped.csv`;
+            const outputPath = path.join(BASE_RESULTS_DIR, defaultOutput);
+            args.output = outputPath;
+            outputInfo = outputPath;
         } else {
-             outputInfo = args.output;
+            outputInfo = args.output;
         }
 
         const jobId = jobQueueService.addJob(
-            'map-labels', 
-            args, 
+            'map-labels',
+            args,
             inputFilesForCleanup,
             outputInfo
         );
 
-        res.status(200).json({ 
-            message: "Mapeamento enfileirado com sucesso e será processado sequencialmente.", 
+        res.status(200).json({
+            message: "Mapeamento enfileirado com sucesso e será processado sequencialmente.",
             jobId: jobId,
             status: "QUEUED",
             outputFile: outputInfo,
             note: "Você receberá uma notificação por e-mail na conclusão."
         });
-        
+
     } catch (error) {
         if (fastaFilePath) await fileService.deleteFile(fastaFilePath);
         if (predictionsFilePath) await fileService.deleteFile(predictionsFilePath);
-        
-        res.status(500).json({ 
-            message: "Falha no pré-processamento (upload ou validação de entrada).", 
-            error: error.message 
+
+        res.status(500).json({
+            message: "Falha no pré-processamento (upload ou validação de entrada).",
+            error: error.message
         });
     }
 };
@@ -207,62 +202,59 @@ exports.mapLabels = async (req, res) => {
 exports.evaluateMetrics = async (req, res) => {
     let predictionsFilePath = null;
     let runOutputDir = null;
-    
+
     try {
         const args = req.body;
 
-<<<<<<< Updated upstream
-=======
         if (!args || !args.notificationEmail) {
             return res.status(400).json({ message: 'notificationEmail is required' });
         }
 
->>>>>>> Stashed changes
         if (!req.file) {
             throw new Error("Arquivo CSV de predições é obrigatório (campo 'predictionsFile').");
         }
         predictionsFilePath = await fileService.saveFileStream(req.file);
-        args.predictions = predictionsFilePath; 
-        
+        args.predictions = predictionsFilePath;
+
         const inputFilesForCleanup = [predictionsFilePath];
 
         if (!args.output) {
             const timestamp = Date.now();
             const uniqueDirName = `evaluation_${timestamp}`;
-            runOutputDir = path.join(BASE_RESULTS_DIR, uniqueDirName); 
+            runOutputDir = path.join(BASE_RESULTS_DIR, uniqueDirName);
             args.output = runOutputDir;
         } else {
             runOutputDir = args.output;
         }
 
         if (!args.hierarchy) {
-             args.hierarchy = 'src/nodes/tree.txt'; 
+            args.hierarchy = 'src/nodes/tree.txt';
         }
 
         args.verbose = true;
 
         const jobId = jobQueueService.addJob(
-            'evaluate', 
-            args, 
+            'evaluate',
+            args,
             inputFilesForCleanup,
             runOutputDir
         );
 
-        res.status(200).json({ 
-            message: "Avaliação enfileirada com sucesso e será processada sequencialmente.", 
+        res.status(200).json({
+            message: "Avaliação enfileirada com sucesso e será processada sequencialmente.",
             jobId: jobId,
             status: "QUEUED",
             outputDir: runOutputDir,
             note: "Você receberá uma notificação por e-mail na conclusão."
         });
-        
+
     } catch (error) {
         if (predictionsFilePath) {
             await fileService.deleteFile(predictionsFilePath);
         }
-        res.status(500).json({ 
-            message: "Falha no pré-processamento (upload ou configuração de entrada).", 
-            error: error.message 
+        res.status(500).json({
+            message: "Falha no pré-processamento (upload ou configuração de entrada).",
+            error: error.message
         });
     }
 };

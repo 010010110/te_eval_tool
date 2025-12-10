@@ -7,9 +7,11 @@ sem modificar o arquivo fonte.
 Funcionalidades do Wrapper:
 1. Monkey Patching: Intercepta `tf.keras.models.load_model` para forçar `compile=False`,
    evitando erros de desserialização do otimizador (ExponentialDecay) no TF 2.8+.
-2. Contexto de Arquivo: Simula a variável `__file__` e ajusta o diretório de trabalho
+2. Code Patching: Remove import problemático `from turtle import color` que causa
+   erro ModuleNotFoundError (tkinter) em ambientes headless. A variável nunca é usada.
+3. Contexto de Arquivo: Simula a variável `__file__` e ajusta o diretório de trabalho
    para que o script encontre seus pesos e datasets relativos corretamente.
-3. Multiprocessing: Executa o script no namespace `globals()` para garantir que 
+4. Multiprocessing: Executa o script no namespace `globals()` para garantir que 
    funções internas sejam serializáveis (pickle) durante o processamento paralelo.
 """
 
@@ -51,7 +53,12 @@ if __name__ == "__main__":
     
     try:
         with open(real_script_path, 'r') as f:
-            code = compile(f.read(), real_script_path, 'exec')
+            source_code = f.read()
+            
+            # Patch: Remove problematic turtle import (unused in code)
+            source_code = source_code.replace('from turtle import color\n', '')
+            
+            code = compile(source_code, real_script_path, 'exec')
             global_namespace = globals()
             global_namespace['__file__'] = real_script_path
             global_namespace['__name__'] = '__main__'
