@@ -4,7 +4,10 @@ const path = require('path');
 
 const BASE_RESULTS_DIR = '/app/data/results';
 const CLI_ROOT_PATH = path.join(__dirname, '..', '..', '..', 'CLI');
+
+
 const TERL_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'TERL', 'Models');
+const INPACTOR2_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'Inpactor2');
 
 exports.run = async (req, res) => {
     let tempFilePath = null;
@@ -12,12 +15,7 @@ exports.run = async (req, res) => {
     
     try {
         const args = req.body;
-
-        // notificationEmail is required for all async jobs — validate early
-        if (!args || !args.notificationEmail) {
-            return res.status(400).json({ message: 'notificationEmail is required' });
-        }
-
+        
         if (!req.file) {
             throw new Error("Arquivo FASTA de entrada (fastaFile) é obrigatório.");
         }
@@ -33,18 +31,20 @@ exports.run = async (req, res) => {
             runOutputDir = args.output;
         }
         
-        const CLASSIFYTE_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'ClassifyTE', 'models');
-        const YORO_MODELS_DIR = path.join(CLI_ROOT_PATH, 'src', 'models', 'YORO', 'models');
+        if (args.model === 'inpactorDB') {
+            args.model = 'inpactor2';
+        }
 
         if (!args.modelFile) {
             if (args.model === 'classifyte' || !args.model) {
-                args.modelFile = path.join(CLASSIFYTE_MODELS_DIR, 'ClassifyTE_combined.pkl');
+                args.modelFile = 'ClassifyTE_combined.pkl';
             }
             else if (args.model === 'terl') {
                 args.modelFile = path.join(TERL_MODELS_DIR, 'DS3');
             }
-            else if (args.model === 'yoro') {
-                args.modelFile = path.join(YORO_MODELS_DIR, 'AAqqYOLOqqdomainqqV25.hdf5');
+            
+            else if (args.model === 'inpactor2') {
+                args.modelFile = INPACTOR2_DIR;
             }
         } 
         
@@ -56,34 +56,6 @@ exports.run = async (req, res) => {
                 !args.modelFile.startsWith(prefix)) {
                 
                 args.modelFile = path.join(prefix, args.modelFile);
-            }
-        }
-        else if (args.model === 'classifyte') {
-            // Map short ClassifyTE model names to the models directory
-            try {
-                const isAbsolute = path.isAbsolute(args.modelFile);
-                const hasDir = args.modelFile.indexOf(path.sep) !== -1;
-                if (!isAbsolute && !hasDir) {
-                    let candidate = args.modelFile;
-                    if (!candidate.endsWith('.pkl')) candidate = candidate + '.pkl';
-                    args.modelFile = path.join(CLASSIFYTE_MODELS_DIR, candidate);
-                }
-            } catch (e) {
-                // If anything goes wrong, leave args.modelFile as provided.
-            }
-        }
-        else if (args.model === 'yoro') {
-            // Map short YORO model names (e.g. AAqqYOLOqqdomainqqV21) to the models directory
-            try {
-                const isAbsolute = path.isAbsolute(args.modelFile);
-                const hasDir = args.modelFile.indexOf(path.sep) !== -1;
-                if (!isAbsolute && !hasDir) {
-                    let candidate = args.modelFile;
-                    if (!candidate.endsWith('.hdf5')) candidate = candidate + '.hdf5';
-                    args.modelFile = path.join(YORO_MODELS_DIR, candidate);
-                }
-            } catch (e) {
-                // If anything goes wrong, leave args.modelFile as provided.
             }
         }
         
@@ -126,11 +98,6 @@ exports.mapLabels = async (req, res) => {
     
     try {
         const args = req.body;
-
-        // notificationEmail is required for map-labels
-        if (!args || !args.notificationEmail) {
-            return res.status(400).json({ message: 'notificationEmail is required' });
-        }
         const files = req.files;
 
         const inputFilesForCleanup = [];
@@ -202,11 +169,6 @@ exports.evaluateMetrics = async (req, res) => {
     
     try {
         const args = req.body;
-
-        // notificationEmail is required for evaluate
-        if (!args || !args.notificationEmail) {
-            return res.status(400).json({ message: 'notificationEmail is required' });
-        }
 
         if (!req.file) {
             throw new Error("Arquivo CSV de predições é obrigatório (campo 'predictionsFile').");

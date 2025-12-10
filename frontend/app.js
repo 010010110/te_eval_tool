@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:3002/api/v1'
+
+const BASE_URL = 'http://127.0.0.1:3002/api/v1'
 
 const runForm = document.getElementById('runForm')
 const runResult = document.getElementById('runResult')
@@ -119,6 +120,10 @@ const YORO_MODELS = [
   'AAqqYOLOqqdomainqqV25'
 ]
 
+const INPACTOR2_MODELS = [
+  'Default (Inpactor2 Folder)'
+]
+
 function showElement(id, show=true){
   const el = document.getElementById(id)
   if(!el) return
@@ -139,6 +144,8 @@ function setSelectOptions(selectEl, options){
 function wireRunModelOptions(){
   const modelSelect = document.querySelector('#runForm select[name="model"]')
   const modelFileSelect = document.getElementById('modelFileSelect')
+  const modelFileLabel = document.getElementById('modelFileLabel')
+  
   const terlModelList = document.getElementById('terlModelList')
   const classModelList = document.getElementById('classifyteModelList')
   const yoroModelList = document.getElementById('yoroModelList')
@@ -146,8 +153,7 @@ function wireRunModelOptions(){
   if(!modelSelect || !modelFileSelect) return
 
   // init lists
-  setSelectOptions(modelFileSelect, CLASSIFYTE_MODELS)
-  terlModelList.innerHTML = TERL_MODELS.map(m => `<li>${m}</li>`).join('\n')
+  if(terlModelList) terlModelList.innerHTML = TERL_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(classModelList) classModelList.innerHTML = CLASSIFYTE_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(yoroModelList) yoroModelList.innerHTML = YORO_MODELS.map(m => `<li>${m}</li>`).join('\n')
 
@@ -155,18 +161,25 @@ function wireRunModelOptions(){
     const model = modelSelect.value
     // hide all model-specific areas first
     document.querySelectorAll('.model-specific').forEach(el => el.classList.add('hidden'))
+    
+    // Show modelFile selector by default
+    if (modelFileLabel) modelFileLabel.classList.remove('hidden');
 
     if(model === 'classifyte'){
       setSelectOptions(modelFileSelect, CLASSIFYTE_MODELS)
       showElement('classifyteOpts', true)
     } else if(model === 'terl'){
-      // show a simple list and a model-file select tailored for TERL
       setSelectOptions(modelFileSelect, TERL_MODELS)
       showElement('terlOpts', true)
     } else if(model === 'yoro'){
       setSelectOptions(modelFileSelect, YORO_MODELS)
       showElement('yoroOptions', true)
+    } else if(model === 'inpactor2'){
+      setSelectOptions(modelFileSelect, INPACTOR2_MODELS)
+      if (modelFileLabel) modelFileLabel.classList.add('hidden'); // Hide file selector for Inpactor2
+      showElement('inpactorOpts', true)
     }
+    
     // Enable inputs for visible model-specific section and disable inputs in hidden sections
     document.querySelectorAll('.model-specific').forEach(section => {
       const isHidden = section.classList.contains('hidden')

@@ -78,4 +78,4 @@ default_dataset # Mantenha se for um arquivo temporário/grande para teste
 # --------------------
 .DS_Store
 .idea/
-.vscode/ # Diretório específico de configurações da IDE (já estava no TERL)
+.vscode/ # Diretório específico de configurações da IDE (já estava no TERL)backend/.env
