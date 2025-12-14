@@ -152,6 +152,7 @@ function wireRunModelOptions(){
   if(!modelSelect || !modelFileSelect) return
 
   // init lists
+  setSelectOptions(modelFileSelect, CLASSIFYTE_MODELS)
   if(terlModelList) terlModelList.innerHTML = TERL_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(classModelList) classModelList.innerHTML = CLASSIFYTE_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(yoroModelList) yoroModelList.innerHTML = YORO_MODELS.map(m => `<li>${m}</li>`).join('\n')

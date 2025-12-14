@@ -279,6 +279,135 @@
                                 clean=true, verbose=true and autoLabel=true for /run).
                             </div>
 
+                        <form id="runForm">
+                            <label>Notification email:
+                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                            </label>
+                            <label>FASTA (file):
+                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                            </label>
+
+                            <label>Model:
+                                <select name="model">
+                                    <option value="classifyte">classifyte</option>
+                                    <option value="terl">terl</option>
+                                    <option value="yoro">yoro</option>
+                                    <option value="inpactor2">inpactor2</option>
+                                </select>
+                            </label>
+
+                            <div id="modelOptions">
+                                <label id="modelFileLabel">modelFile (optional):
+                                    <select name="modelFile" id="modelFileSelect">
+                                        </select>
+                                </label>
+
+                                <div id="classifyteOpts" class="model-specific hidden">
+                                    <div id="algorithmGroup">
+                                        <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
+                                        <select id="algorithm" name="algorithm">
+                                            <option value="lcpnb" selected>LCPNB</option>
+                                            <option value="nllcpn">NLLCPN</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="models-list">
+                                        <strong>Available ClassifyTE models:</strong>
+                                        <ul id="classifyteModelList">
+                                            <li>ClassifyTE_combined</li>
+                                            <li>ClassifyTE_pgsb</li>
+                                            <li>ClassifyTE_repbase</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div id="terlOpts" class="model-specific hidden">
+                                    <div class="models-list small">
+                                        <strong>Available TERL model folders:</strong>
+                                        <ul id="terlModelList"></ul>
+                                    </div>
+                                </div>
+
+                                <div id="yoroOptions" class="form-section disabled-field model-specific hidden"
+                                    style="margin-top:12px;">
+                                    <h3>YORO options (only for model = YORO)</h3>
+                                    <label for="window">Window size (window)</label>
+                                    <input type="number" id="window" name="window" value="50000" min="1">
+
+                                    <label for="threads">Threads (threads)</label>
+                                    <input type="number" id="threads" name="threads"
+                                        placeholder="leave empty to use available cores">
+
+                                    <label for="threshold">Threshold (threshold)</label>
+                                    <input type="number" step="0.01" id="threshold" name="threshold" value="0.8" min="0"
+                                        max="1">
+
+                                    <label for="cycles">Cycles (cycles)</label>
+                                    <input type="number" id="cycles" name="cycles" value="1" min="1">
+
+                                    <div class="models-list">
+                                        <strong>Available YORO models:</strong>
+                                        <ul id="yoroModelList">
+                                            <li>AAqqYOLOqqdomainqqV21</li>
+                                            <li>AAqqYOLOqqdomainqqV25</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div id="inpactor2Options" class="form-section disabled-field model-specific hidden"
+                                    style="margin-top:12px;">
+                                    <h3>Inpactor2 options (only for model = Inpactor2)</h3>
+
+                                    <label for="inpactor2Threads">Threads (threads)</label>
+                                    <input type="number" id="inpactor2Threads" name="threads" value="4" min="1">
+
+                                    <label for="inpactor2Cycles">Cycles (cycles)</label>
+                                    <input type="number" id="inpactor2Cycles" name="cycles" value="1" min="1" max="5">
+
+                                    <label for="maxLen">Maximum LTR length (maxLen)</label>
+                                    <input type="number" id="maxLen" name="maxLen" value="15000" min="1" max="50000">
+
+                                    <label for="minLen">Minimum LTR length (minLen)</label>
+                                    <input type="number" id="minLen" name="minLen" value="1000" min="1" max="50000">
+
+                                    <label for="annotate">Annotate with RepeatMasker (annotate)</label>
+                                    <select id="annotate" name="annotate">
+                                        <option value="no" selected>no</option>
+                                        <option value="yes">yes</option>
+                                    </select>
+
+                                    <label for="tgCa">Keep only TG-CA-LTRs (tgCa)</label>
+                                    <select id="tgCa" name="tgCa">
+                                        <option value="no" selected>no</option>
+                                        <option value="yes">yes</option>
+                                    </select>
+
+                                    <label for="tsd">Keep only elements with TSD (tsd)</label>
+                                    <select id="tsd" name="tsd">
+                                        <option value="no" selected>no</option>
+                                        <option value="yes">yes</option>
+                                    </select>
+
+                                    <label for="curated">Keep only intact elements (curated)</label>
+                                    <select id="curated" name="curated">
+                                        <option value="yes" selected>yes</option>
+                                        <option value="no">no</option>
+                                    </select>
+
+                                    <div class="models-list">
+                                        <strong>Available Inpactor2 installation:</strong>
+                                        <ul id="inpactor2ModelList">
+                                            <li>Inpactor2</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="note">
+                                <strong>Note:</strong> The server enforces defaults for several parameters (for example,
+                                clean=true, verbose=true and autoLabel=true for /run).
+                            </div>
+
                         <div id="terlOpts" class="model-specific hidden">
                             <div class="models-list small">
                                 <strong>Available TERL model folders:</strong>
@@ -370,6 +499,9 @@
                                 </ul>
                             </div>
                         </div>
+                            <button type="submit">Submit /run</button>
+                            <pre class="response" id="runResult"></pre>
+                        </form>
                     </div>
 
                     <div id="mapTab" class="card tabContent">
