@@ -5,6 +5,9 @@ services:
       dockerfile: Dockerfile
     
     container_name: te_eval_api_container
+
+    env_file:
+      - ./backend/.env
     
     ports:
       - "3002:3002"

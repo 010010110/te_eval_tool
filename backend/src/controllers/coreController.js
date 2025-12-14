@@ -58,6 +58,40 @@ exports.run = async (req, res) => {
                 args.modelFile = path.join(prefix, args.modelFile);
             }
         }
+<<<<<<< Updated upstream
+=======
+        else if (args.model === 'classifyte') {
+            try {
+                const isAbsolute = path.isAbsolute(args.modelFile);
+                const hasDir = args.modelFile.indexOf(path.sep) !== -1;
+                if (!isAbsolute && !hasDir) {
+                    let candidate = args.modelFile;
+                    if (!candidate.endsWith('.pkl')) candidate = candidate + '.pkl';
+                    args.modelFile = path.join(CLASSIFYTE_MODELS_DIR, candidate);
+                }
+            } catch (e) {}
+        }
+        else if (args.model === 'yoro') {
+            try {
+                const isAbsolute = path.isAbsolute(args.modelFile);
+                const hasDir = args.modelFile.indexOf(path.sep) !== -1;
+                if (!isAbsolute && !hasDir) {
+                    let candidate = args.modelFile;
+                    if (!candidate.endsWith('.hdf5')) candidate = candidate + '.hdf5';
+                    args.modelFile = path.join(YORO_MODELS_DIR, candidate);
+                }
+            } catch (e) {}
+        }
+        else if (args.model === 'inpactor2') {
+            // Força o diretório correto ignorando o texto do frontend se não for caminho absoluto
+            try {
+                const isAbsolute = path.isAbsolute(args.modelFile);
+                if (!isAbsolute) {
+                    args.modelFile = INPACTOR2_DIR;
+                }
+            } catch (e) {}
+        }
+>>>>>>> Stashed changes
         
         args.clean = true;
         args.verbose = true;
@@ -98,6 +132,13 @@ exports.mapLabels = async (req, res) => {
     
     try {
         const args = req.body;
+<<<<<<< Updated upstream
+=======
+
+        if (!args || !args.notificationEmail) {
+            return res.status(400).json({ message: 'notificationEmail is required' });
+        }
+>>>>>>> Stashed changes
         const files = req.files;
 
         const inputFilesForCleanup = [];
@@ -170,6 +211,13 @@ exports.evaluateMetrics = async (req, res) => {
     try {
         const args = req.body;
 
+<<<<<<< Updated upstream
+=======
+        if (!args || !args.notificationEmail) {
+            return res.status(400).json({ message: 'notificationEmail is required' });
+        }
+
+>>>>>>> Stashed changes
         if (!req.file) {
             throw new Error("Arquivo CSV de predições é obrigatório (campo 'predictionsFile').");
         }

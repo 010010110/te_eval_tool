@@ -2,19 +2,12 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const mailerService = require('./mailerService');
-const PYTHON_EXECUTABLE = 'python3';
+const PYTHON_EXECUTABLE = process.env.PYTHON_CLI_EXECUTABLE || 'python3';
 
 const CLI_CWD = path.join(__dirname, '..', '..', '..', 'CLI');
-const CLI_MAIN_SCRIPT_RELATIVE = path.join('src', 'main.py');
 
 const camelToKebab = (camelCase) => camelCase.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
 
-/**
- * Constrói a lista de argumentos de linha de comando a partir do objeto JSON.
- * @param {string} command O comando CLI ('run', 'map-labels', etc.).
- * @param {object} args Os argumentos da requisição.
- * @returns {string[]} Array de argumentos para o spawn.
- */
 const buildArgs = (command, args) => {
     const cliArgs = [command];
 
@@ -44,12 +37,6 @@ const buildArgs = (command, args) => {
     return cliArgs;
 };
 
-/**
- * Executa o comando CLI Python e bloqueia até a sua conclusão.
- * @param {string} command O comando CLI ('run' ou 'map-labels').
- * @param {object} args Argumentos da requisição.
- * @returns {Promise<string>} Promise que resolve com o stdout ou rejeita com o stderr.
- */
 const executeBlockingJob = (command, args) => {
     return new Promise((resolve, reject) => {
         
@@ -98,9 +85,6 @@ const executeBlockingJob = (command, args) => {
 };
 
 class CLIService {
-    /**
-     * Executa um job que deve ser bloqueante e sequencial (usado pela fila).
-     */
     executeBlockingJob(command, args) {
         return executeBlockingJob(command, args);
     }

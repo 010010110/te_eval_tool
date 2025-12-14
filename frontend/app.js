@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 
+=======
+// IMPORTANTE: Usar IP direto para evitar problemas com localhost no WSL/Windows
+>>>>>>> Stashed changes
 const BASE_URL = 'http://127.0.0.1:3002/api/v1'
 
 const runForm = document.getElementById('runForm')
@@ -153,6 +157,10 @@ function wireRunModelOptions(){
   if(!modelSelect || !modelFileSelect) return
 
   // init lists
+<<<<<<< Updated upstream
+=======
+  setSelectOptions(modelFileSelect, CLASSIFYTE_MODELS)
+>>>>>>> Stashed changes
   if(terlModelList) terlModelList.innerHTML = TERL_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(classModelList) classModelList.innerHTML = CLASSIFYTE_MODELS.map(m => `<li>${m}</li>`).join('\n')
   if(yoroModelList) yoroModelList.innerHTML = YORO_MODELS.map(m => `<li>${m}</li>`).join('\n')

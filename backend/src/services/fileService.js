@@ -43,21 +43,15 @@ exports.deleteFile = (filePath) => {
     });
 };
 
-/**
- * Delete a filesystem path (file or directory) recursively.
- * Uses fs.promises.rm when available and falls back to recursive rmdir/unlink.
- */
 exports.deletePath = async (targetPath) => {
     if (!targetPath) return;
 
     try {
         const stat = await fs.promises.stat(targetPath);
         if (stat.isDirectory()) {
-            // recursive remove
             if (fs.promises.rm) {
                 await fs.promises.rm(targetPath, { recursive: true, force: true });
             } else {
-                // fallback for older Node: remove files then rmdir
                 const files = await fs.promises.readdir(targetPath);
                 await Promise.all(files.map(f => exports.deletePath(path.join(targetPath, f))));
                 await fs.promises.rmdir(targetPath);
@@ -65,7 +59,5 @@ exports.deletePath = async (targetPath) => {
         } else {
             await fs.promises.unlink(targetPath);
         }
-    } catch (e) {
-        // ignore errors; this is cleanup
-    }
+    } catch (e) {}
 };
