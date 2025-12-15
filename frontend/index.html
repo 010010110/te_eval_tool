@@ -126,20 +126,6 @@
                                 <li><strong>Inpactor2-specific</strong> options: threads, cycles, maxLen, minLen, annotate, tgCa, tsd, curated.</li>
                             </ul>
 
-                    <div id="modelOptions">
-                        <label id="modelFileLabel">modelFile (optional):
-                            <select name="modelFile" id="modelFileSelect">
-                                </select>
-                        </label>
-
-                        <div id="classifyteOpts" class="model-specific hidden">
-                            <div id="algorithmGroup">
-                                <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
-                                <select id="algorithm" name="algorithm">
-                                    <option value="lcpnb" selected>LCPNB</option>
-                                    <option value="nllcpn">NLLCPN</option>
-                                </select>
-                        </label>
                             <h4>Server behavior</h4>
                             <ul>
                                 <li>The API queues jobs and returns immediately with a job id and output path.</li>
@@ -170,7 +156,7 @@
                             <div id="modelOptions">
                                 <label id="modelFileLabel">modelFile (optional):
                                     <select name="modelFile" id="modelFileSelect">
-                                        </select>
+                                    </select>
                                 </label>
 
                                 <div id="classifyteOpts" class="model-specific hidden">
@@ -279,226 +265,6 @@
                                 clean=true, verbose=true and autoLabel=true for /run).
                             </div>
 
-                        <form id="runForm">
-                            <label>Notification email:
-                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
-                            </label>
-                            <label>FASTA (file):
-                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
-                            </label>
-
-                            <label>Model:
-                                <select name="model">
-                                    <option value="classifyte">classifyte</option>
-                                    <option value="terl">terl</option>
-                                    <option value="yoro">yoro</option>
-                                    <option value="inpactor2">inpactor2</option>
-                                </select>
-                            </label>
-
-                            <div id="modelOptions">
-                                <label id="modelFileLabel">modelFile (optional):
-                                    <select name="modelFile" id="modelFileSelect">
-                                        </select>
-                                </label>
-
-                                <div id="classifyteOpts" class="model-specific hidden">
-                                    <div id="algorithmGroup">
-                                        <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
-                                        <select id="algorithm" name="algorithm">
-                                            <option value="lcpnb" selected>LCPNB</option>
-                                            <option value="nllcpn">NLLCPN</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="models-list">
-                                        <strong>Available ClassifyTE models:</strong>
-                                        <ul id="classifyteModelList">
-                                            <li>ClassifyTE_combined</li>
-                                            <li>ClassifyTE_pgsb</li>
-                                            <li>ClassifyTE_repbase</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div id="terlOpts" class="model-specific hidden">
-                                    <div class="models-list small">
-                                        <strong>Available TERL model folders:</strong>
-                                        <ul id="terlModelList"></ul>
-                                    </div>
-                                </div>
-
-                                <div id="yoroOptions" class="form-section disabled-field model-specific hidden"
-                                    style="margin-top:12px;">
-                                    <h3>YORO options (only for model = YORO)</h3>
-                                    <label for="window">Window size (window)</label>
-                                    <input type="number" id="window" name="window" value="50000" min="1">
-
-                                    <label for="threads">Threads (threads)</label>
-                                    <input type="number" id="threads" name="threads"
-                                        placeholder="leave empty to use available cores">
-
-                                    <label for="threshold">Threshold (threshold)</label>
-                                    <input type="number" step="0.01" id="threshold" name="threshold" value="0.8" min="0"
-                                        max="1">
-
-                                    <label for="cycles">Cycles (cycles)</label>
-                                    <input type="number" id="cycles" name="cycles" value="1" min="1">
-
-                                    <div class="models-list">
-                                        <strong>Available YORO models:</strong>
-                                        <ul id="yoroModelList">
-                                            <li>AAqqYOLOqqdomainqqV21</li>
-                                            <li>AAqqYOLOqqdomainqqV25</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div id="inpactor2Options" class="form-section disabled-field model-specific hidden"
-                                    style="margin-top:12px;">
-                                    <h3>Inpactor2 options (only for model = Inpactor2)</h3>
-
-                                    <label for="inpactor2Threads">Threads (threads)</label>
-                                    <input type="number" id="inpactor2Threads" name="threads" value="4" min="1">
-
-                                    <label for="inpactor2Cycles">Cycles (cycles)</label>
-                                    <input type="number" id="inpactor2Cycles" name="cycles" value="1" min="1" max="5">
-
-                                    <label for="maxLen">Maximum LTR length (maxLen)</label>
-                                    <input type="number" id="maxLen" name="maxLen" value="15000" min="1" max="50000">
-
-                                    <label for="minLen">Minimum LTR length (minLen)</label>
-                                    <input type="number" id="minLen" name="minLen" value="1000" min="1" max="50000">
-
-                                    <label for="annotate">Annotate with RepeatMasker (annotate)</label>
-                                    <select id="annotate" name="annotate">
-                                        <option value="no" selected>no</option>
-                                        <option value="yes">yes</option>
-                                    </select>
-
-                                    <label for="tgCa">Keep only TG-CA-LTRs (tgCa)</label>
-                                    <select id="tgCa" name="tgCa">
-                                        <option value="no" selected>no</option>
-                                        <option value="yes">yes</option>
-                                    </select>
-
-                                    <label for="tsd">Keep only elements with TSD (tsd)</label>
-                                    <select id="tsd" name="tsd">
-                                        <option value="no" selected>no</option>
-                                        <option value="yes">yes</option>
-                                    </select>
-
-                                    <label for="curated">Keep only intact elements (curated)</label>
-                                    <select id="curated" name="curated">
-                                        <option value="yes" selected>yes</option>
-                                        <option value="no">no</option>
-                                    </select>
-
-                                    <div class="models-list">
-                                        <strong>Available Inpactor2 installation:</strong>
-                                        <ul id="inpactor2ModelList">
-                                            <li>Inpactor2</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="note">
-                                <strong>Note:</strong> The server enforces defaults for several parameters (for example,
-                                clean=true, verbose=true and autoLabel=true for /run).
-                            </div>
-
-                        <div id="terlOpts" class="model-specific hidden">
-                            <div class="models-list small">
-                                <strong>Available TERL model folders:</strong>
-                                <ul id="terlModelList"></ul>
-                            </div>
-                        </div>
-
-                        <div id="yoroOptions" class="form-section disabled-field model-specific hidden"
-                            style="margin-top:12px;">
-                            <h3>YORO options (only for model = YORO)</h3>
-                            <label for="window">Window size (window)</label>
-                            <input type="number" id="window" name="window" value="50000" min="1">
-
-                            <label for="threads">Threads (threads)</label>
-                            <input type="number" id="threads" name="threads"
-                                placeholder="leave empty to use available cores">
-
-                            <label for="threshold">Threshold (threshold)</label>
-                            <input type="number" step="0.01" id="threshold" name="threshold" value="0.8" min="0"
-                                max="1">
-
-                            <label for="cycles">Cycles (cycles)</label>
-                            <input type="number" id="cycles" name="cycles" value="1" min="1">
-
-                            <div class="models-list">
-                                <strong>Available YORO models:</strong>
-                                <ul id="yoroModelList">
-                                    <li>AAqqYOLOqqdomainqqV21</li>
-                                    <li>AAqqYOLOqqdomainqqV25</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div id="inpactorOpts" class="model-specific hidden">
-                            <div class="models-list small">
-                                <strong>Inpactor2:</strong>
-                                <p class="muted">Uses the integrated Inpactor2 tool (Structure + Deep Learning) for LTR identification.</p>
-                            </div>
-                        </div>
-                        
-                            <button type="submit">Submit /run</button>
-                            <pre class="response" id="runResult"></pre>
-                        </form>
-
-                        <div id="inpactor2Options" class="form-section disabled-field model-specific hidden"
-                            style="margin-top:12px;">
-                            <h3>Inpactor2 options (only for model = Inpactor2)</h3>
-                            
-                            <label for="inpactor2Threads">Threads (threads)</label>
-                            <input type="number" id="inpactor2Threads" name="threads" value="4" min="1">
-
-                            <label for="inpactor2Cycles">Cycles (cycles)</label>
-                            <input type="number" id="inpactor2Cycles" name="cycles" value="1" min="1" max="5">
-
-                            <label for="maxLen">Maximum LTR length (maxLen)</label>
-                            <input type="number" id="maxLen" name="maxLen" value="15000" min="1" max="50000">
-
-                            <label for="minLen">Minimum LTR length (minLen)</label>
-                            <input type="number" id="minLen" name="minLen" value="1000" min="1" max="50000">
-
-                            <label for="annotate">Annotate with RepeatMasker (annotate)</label>
-                            <select id="annotate" name="annotate">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="tgCa">Keep only TG-CA-LTRs (tgCa)</label>
-                            <select id="tgCa" name="tgCa">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="tsd">Keep only elements with TSD (tsd)</label>
-                            <select id="tsd" name="tsd">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="curated">Keep only intact elements (curated)</label>
-                            <select id="curated" name="curated">
-                                <option value="yes" selected>yes</option>
-                                <option value="no">no</option>
-                            </select>
-
-                            <div class="models-list">
-                                <strong>Available Inpactor2 installation:</strong>
-                                <ul id="inpactor2ModelList">
-                                    <li>Inpactor2</li>
-                                </ul>
-                            </div>
-                        </div>
                             <button type="submit">Submit /run</button>
                             <pre class="response" id="runResult"></pre>
                         </form>
@@ -541,7 +307,29 @@
                     <div id="evalTab" class="card tabContent">
                         <h2>Evaluate — Generate Metrics</h2>
                         <p class="howto"><strong>Purpose</strong>: Compute standardized evaluation metrics from a predictions
-                            CSV.</p>
+                            CSV (must contain ground-truth labels when required). The job runs asynchronously and returns a job
+                            id immediately.</p>
+
+                        <div class="howto-details">
+                            <h4>Inputs</h4>
+                            <ul>
+                                <li><strong>predictionsFile (CSV)</strong> — required. The CSV should contain at minimum the
+                                    columns used by the evaluator (e.g. <code>Actual_Label</code>,
+                                    <code>Predicted label</code>).
+                                </li>
+                                <li><strong>format</strong> — choose <code>detailed</code>, <code>summary</code> or
+                                    <code>json</code> depending on the output you need.
+                                </li>
+                            </ul>
+
+                            <h4>Server behavior</h4>
+                            <ul>
+                                <li>The server sets <code>verbose=true</code> and will create an output directory automatically
+                                    when omitted.</li>
+                                <li>The evaluator generates JSON and text reports; include Actual_Label in the predictions CSV
+                                    to produce full metrics.</li>
+                            </ul>
+                        </div>
 
                         <form id="evaluateForm">
                             <label>Notification email:
@@ -565,112 +353,9 @@
                             <pre class="response" id="evalResult"></pre>
                         </form>
                     </div>
-
-                    <button type="submit">Submit /map-labels</button>
-                    <pre class="response" id="mapResult"></pre>
-                </form>
-            </div>
-
-            <div id="evalTab" class="card tabContent">
-                <h2>Evaluate — Generate Metrics</h2>
-                <p class="howto"><strong>Purpose</strong>: Compute standardized evaluation metrics from a predictions
-                    CSV (must contain ground-truth labels when required). The job runs asynchronously and returns a job
-                    id immediately.</p>
-
-                <div class="howto-details">
-                    <h4>Inputs</h4>
-                    <ul>
-                        <li><strong>predictionsFile (CSV)</strong> — required. The CSV should contain at minimum the
-                            columns used by the evaluator (e.g. <code>Actual_Label</code>,
-                            <code>Predicted label</code>).
-                        </li>
-                        <li><strong>format</strong> — choose <code>detailed</code>, <code>summary</code> or
-                            <code>json</code> depending on the output you need.
-                        </li>
-                    </ul>
-
-                    <h4>Server behavior</h4>
-                    <ul>
-                        <li>The server sets <code>verbose=true</code> and will create an output directory automatically
-                            when omitted.</li>
-                        <li>The evaluator generates JSON and text reports; include Actual_Label in the predictions CSV
-                            to produce full metrics.</li>
-                    </ul>
-                </div>
-
-                    <form id="evaluateForm">
-                        <label>Notification email:
-                            <input type="email" name="notificationEmail" placeholder="you@example.com" required />
-                        </label>
-                    <label>Predictions (CSV):
-                        <input type="file" name="predictionsFile" accept=".csv" required />
-                    </label>
-
-                    <label>format:
-                        <select name="format">
-                            <option value="detailed">detailed</option>
-                            <option value="summary">summary</option>
-                            <option value="json">json</option>
-                        </select>
-                    </label>
-
-                    <div class="note">The server enforces <code>verbose=true</code> for /evaluate.</div>
-
-                    <button type="submit">Submit /evaluate</button>
-                    <pre class="response" id="evalResult"></pre>
-                </form>
+                </section>
             </div>
         </section>
-
-        <section class="info">
-            <h3>Quick reference — endpoints</h3>
-
-            <div class="endpoint">
-                <h4>/run — classification</h4>
-                <p><strong>Purpose:</strong> Classify transposable elements in DNA sequences using machine learning models. Upload a FASTA file containing DNA sequences and select a classification model (ClassifyTE, TERL, YORO, or Inpactor2). The system automatically labels sequences, runs the selected model, and optionally evaluates the results against known annotations.</p>
-            </div>
-
-            <div class="endpoint">
-                <h4>/map-labels — FASTA header mapping</h4>
-                <p><strong>Purpose:</strong> Standardize and validate FASTA sequence headers according to a hierarchical taxonomy. This command maps custom or inconsistent sequence labels to a unified classification tree, ensuring compatibility across different tools and datasets. Useful for preparing datasets or validating existing annotations.</p>
-            </div>
-
-            <div class="endpoint">
-                <h4>/evaluate — metrics</h4>
-                <p><strong>Purpose:</strong> Assess classification model performance by computing comprehensive metrics (precision, recall, F1-score, confusion matrices). Compare predicted labels against ground-truth annotations to quantify model accuracy at multiple taxonomic levels. Produces both human-readable reports and machine-readable JSON output.</p>
-            </div>
-
-            <div class="notes">
-                <h4>Notes</h4>
-                <ol>
-                    <li>When using notifications the API attempts to email result links and attachments; outputs are removed from server
-                </ol>
-            </div>
-                </section>
-
-                <section class="info">
-                    <h3>Quick reference — endpoints</h3>
-                    <div class="endpoint">
-                        <h4>/run — classification</h4>
-                        <p><strong>Purpose:</strong> Classify transposable elements using ClassifyTE, TERL, YORO or Inpactor2.</p>
-                    </div>
-                    <div class="endpoint">
-                        <h4>/map-labels — FASTA header mapping</h4>
-                        <p><strong>Purpose:</strong> Standardize and validate FASTA sequence headers.</p>
-                    </div>
-                    <div class="endpoint">
-                        <h4>/evaluate — metrics</h4>
-                        <p><strong>Purpose:</strong> Assess classification model performance.</p>
-                    </div>
-                    <div class="notes">
-                        <h4>Notes</h4>
-                        <ol>
-                            <li>When using notifications the API attempts to email result links and attachments.</li>
-                        </ol>
-                    </div>
-                </section>
-            </div>
-        </div>
     </main>
 
     <script src="app.js"></script>
