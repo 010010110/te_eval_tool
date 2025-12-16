@@ -130,26 +130,21 @@ def run(ctx, model, input_file, output_dir, algorithm, model_file, node_file,
                 click.echo(f"⚠️ Aviso: Não foi possível obter ambiente para {model}. Usando python do sistema.")
                 click.echo(f"   Erro: {e}")
 
-        # Instancia o Runner
-        # kwargs permite flexibilidade entre construtores diferentes
-        runner_kwargs = {
-            'python_path': python_path,
-            'input_file': input_file,
-            'output_dir': output_dir,
-            'model_file': model_file,
-            'verbose': verbose,
-            'clean_temp': clean,
-            'auto_label': auto_label,
-            'skip_evaluation': skip_evaluation
-        }
-
-        # Adiciona parâmetros específicos se necessário
+        # Instancia o Runner com parâmetros específicos para cada modelo
         if model == 'classifyte':
-            runner_kwargs['algorithm'] = algorithm
-            runner_kwargs['node_file'] = node_file
-
-        runner = runner_class(**runner_kwargs)
-        if model == 'terl':
+            runner = runner_class(
+                python_path=python_path,
+                input_file=input_file,
+                output_dir=output_dir,
+                model_file=model_file,
+                verbose=verbose,
+                clean_temp=clean,
+                auto_label=auto_label,
+                skip_evaluation=skip_evaluation,
+                algorithm=algorithm,
+                node_file=node_file
+            )
+        elif model == 'terl':
             runner = runner_class(
                 python_path=EnvironmentManager().get_python_path(model),
                 input_file=input_file,

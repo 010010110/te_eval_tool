@@ -76,8 +76,16 @@ const executeBlockingJob = (command, args) => {
         let stdout = '';
         let stderr = '';
         
-        cliProcess.stdout.on('data', (data) => { stdout += data.toString(); });
-        cliProcess.stderr.on('data', (data) => { stderr += data.toString(); });
+        cliProcess.stdout.on('data', (data) => { 
+            const text = data.toString();
+            stdout += text;
+            process.stdout.write(text); // Mostra no console do Docker
+        });
+        cliProcess.stderr.on('data', (data) => { 
+            const text = data.toString();
+            stderr += text;
+            process.stderr.write(text); // Mostra no console do Docker
+        });
 
         cliProcess.on('error', (err) => {
             if (err.code === 'ENOENT') {

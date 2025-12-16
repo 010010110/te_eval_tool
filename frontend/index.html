@@ -77,6 +77,7 @@
                     </div>
                 </aside>
                 <div class="layout-main">
+<<<<<<< Updated upstream
         <section class="forms">
             <div class="tabs">
                 <button class="tab active" data-tab="runTab">Run</button>
@@ -165,6 +166,436 @@
                                 <strong>Available TERL model folders:</strong>
                                 <ul id="terlModelList"></ul>
                             </div>
+=======
+                <section class="forms">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="fragmentTab">Fragments</button>
+                        <button class="tab" data-tab="domainTab">Domains</button>
+                        <button class="tab" data-tab="completeTab">Complete Elements</button>
+                        <button class="tab" data-tab="mapTab">Map Labels</button>
+                        <button class="tab" data-tab="evalTab">Evaluate</button>
+                    </div>
+
+                    <!-- TAB: FRAGMENTS -->
+                    <div id="fragmentTab" class="card tabContent active">
+                        <h2>🧬 Fragment Classification</h2>
+                        <p class="howto"><strong>Purpose</strong>: Classify <strong>fragmented or incomplete</strong> transposable elements using sequence-based approaches.</p>
+
+                        <div class="howto-details">
+                            <h4>What are Fragments?</h4>
+                            <p>Fragments are <strong>broken or incomplete pieces</strong> of transposable elements that may result from:</p>
+                            <ul>
+                                <li>Genomic degradation or truncation</li>
+                                <li>Partial element insertions</li>
+                                <li>Sequencing or assembly artifacts</li>
+                            </ul>
+
+                            <h4>Input Dataset Example</h4>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+>TE_fragment_1
+ATCGATCGATCGATCGATCGATCG...
+>Partial_Copia_LTR
+TGTTGCATGTCGATCGTAGC...
+>Truncated_Gypsy_internal
+GCTAGCTAGCTAGCTAGCTA...</pre>
+                            <p class="muted"><strong>Note:</strong> Sequences can be any length, from small fragments (~100 bp) to partial elements (several kb).</p>
+
+                            <h4>Available Models</h4>
+                            <ul>
+                                <li><strong>ClassifyTE</strong> — Hierarchical stacking machine learning using k-mer features
+                                    <ul style="margin-top: 4px; color: #666;">
+                                        <li><em>Retrotransposons:</em> LTR (Copia, Gypsy, Bel-Pao), DIRS, LINE (R2, RTE, Jockey, L1, I), SINE (tRNA, 7SL, 5S)</li>
+                                        <li><em>DNA transposons:</em> TIRs (Tc1-Mariner, hAT, Mutator, Merlin, Transib, P, PiggyBac, PIF-Harbinger, CACTA)</li>
+                                    </ul>
+                                </li>
+                                <li><strong>TERL</strong> — Convolutional neural network for deep learning classification
+                                    <ul style="margin-top: 4px; color: #666;">
+                                        <li><em>DS1:</em> Superfamilies (Copia, Gypsy, Bel-Pao, ERV, L1, Tc1-Mariner, hAT)</li>
+                                        <li><em>DS2:</em> Orders (Class II, LTR, LINE)</li>
+                                        <li><em>DS3:</em> Extended superfamilies (Copia, Gypsy, Bel-Pao, ERV, L1, SINE, Tc1-Mariner, hAT, Mutator, PIF-Harbinger, CACTA)</li>
+                                        <li><em>DS4:</em> Extended orders (Class II, LTR, LINE, SINE)</li>
+                                        <li><em>DS5:</em> RepBase-trained (Class II, LTR, LINE)</li>
+                                    </ul>
+                                </li>
+                            </ul>
+
+                            <h4>Server behavior</h4>
+                            <ul>
+                                <li>The API queues jobs and returns immediately with a job id and output path.</li>
+                                <li>The server will auto-generate the output directory when you omit it.</li>
+                                <li>Server-enforced flags: <code>clean=true</code>, <code>verbose=true</code>, and
+                                    <code>autoLabel=true</code> for classification.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <form id="fragmentForm">
+                            <label>Notification email:
+                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                            </label>
+                            <label>FASTA (file):
+                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                            </label>
+
+                            <label>Model:
+                                <select name="model" id="fragmentModel">
+                                    <option value="classifyte">ClassifyTE (k-mer + ML)</option>
+                                    <option value="terl">TERL (Deep Learning)</option>
+                                </select>
+                            </label>
+
+                            <div id="fragmentModelOptions">
+                                <label id="fragmentModelFileLabel">modelFile (optional):
+                                    <select name="modelFile" id="fragmentModelFileSelect">
+                                    </select>
+                                </label>
+
+                                <div id="fragmentClassifyteOpts" class="model-specific">
+                                    <div id="fragmentAlgorithmGroup">
+                                        <label for="fragmentAlgorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
+                                        <select id="fragmentAlgorithm" name="algorithm">
+                                            <option value="lcpnb" selected>LCPNB</option>
+                                            <option value="nllcpn">NLLCPN</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="models-list">
+                                        <strong>Available ClassifyTE models:</strong>
+                                        <ul id="fragmentClassifyteModelList">
+                                            <li>ClassifyTE_combined</li>
+                                            <li>ClassifyTE_pgsb</li>
+                                            <li>ClassifyTE_repbase</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div id="fragmentTerlOpts" class="model-specific hidden">
+                                    <div class="models-list small">
+                                        <strong>Available TERL model folders:</strong>
+                                        <ul id="fragmentTerlModelList">
+                                            <li>DS1</li>
+                                            <li>DS3</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="note">
+                                <strong>Note:</strong> The server enforces defaults for several parameters (for example,
+                                clean=true, verbose=true and autoLabel=true).
+                            </div>
+
+                            <button type="submit">Submit Classification</button>
+                            <pre class="response" id="fragmentResult"></pre>
+                        </form>
+                    </div>
+
+                    <!-- TAB: DOMAINS -->
+                    <div id="domainTab" class="card tabContent">
+                        <h2>🔬 Protein Domain Detection</h2>
+                        <p class="howto"><strong>Purpose</strong>: Identify <strong>conserved functional domains</strong> within transposable element proteins.</p>
+
+                        <div class="howto-details">
+                            <h4>What are Domains?</h4>
+                            <p>Domains are <strong>evolutionarily conserved functional modules</strong> in proteins, such as:</p>
+                            <ul>
+                                <li><strong>RT</strong> (Reverse Transcriptase) - copies RNA to DNA</li>
+                                <li><strong>RNase H</strong> - degrades RNA in RNA-DNA hybrids</li>
+                                <li><strong>Integrase</strong> - integrates DNA into genome</li>
+                                <li><strong>GAG</strong> - structural protein</li>
+                                <li><strong>Protease</strong> - processes polyproteins</li>
+                            </ul>
+
+                            <h4>Input Dataset Example</h4>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+>RT_domain_sequence_1
+ATGGCTAGCTAGCTAGCATGCTAGCTAGC...
+>Integrase_region_2
+GCTAGCTAGCTAGCTAGCTAGCTAGCTAG...
+>GAG_protein_coding
+TGATCGATCGATCGATCGATCGATCGATC...</pre>
+                            <p class="muted"><strong>Note:</strong> Sequences should contain protein-coding regions. YORO analyzes windows to detect domain presence.</p>
+
+                            <h4>Available Models & Detectable Domains</h4>
+                            <ul>
+                                <li><strong>YORO</strong> — Deep neural network (YOLO-inspired) for LTR-retrotransposon domain detection. Detects:
+                                    <ul style="margin-top: 4px; color: #666;">
+                                        <li><strong>RT</strong> (Reverse Transcriptase)</li>
+                                        <li><strong>GAG</strong> (Structural protein)</li>
+                                        <li><strong>ENV</strong> (Envelope protein)</li>
+                                        <li><strong>INT</strong> (Integrase)</li>
+                                        <li><strong>AP</strong> (Aspartic Protease)</li>
+                                        <li><strong>RNASEH</strong> (RNase H)</li>
+                                    </ul>
+                                </li>
+                            </ul>
+
+                            <h4>Server behavior</h4>
+                            <ul>
+                                <li>The API queues jobs and returns immediately with a job id and output path.</li>
+                                <li>Server-enforced flags: <code>clean=true</code>, <code>verbose=true</code>, and <code>autoLabel=true</code>.</li>
+                            </ul>
+                        </div>
+
+                        <form id="domainForm">
+                            <label>Notification email:
+                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                            </label>
+                            <label>FASTA (file):
+                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                            </label>
+
+                            <input type="hidden" name="model" value="yoro" />
+
+                            <label>Model File (optional):
+                                <select name="modelFile" id="domainModelFileSelect">
+                                    <option value="AAqqYOLOqqdomainqqV25">AAqqYOLOqqdomainqqV25</option>
+                                    <option value="AAqqYOLOqqdomainqqV21">AAqqYOLOqqdomainqqV21</option>
+                                </select>
+                            </label>
+
+                            <div id="domainYoroOptions" class="form-section" style="margin-top:12px;">
+                                <h3>YORO Parameters</h3>
+                                
+                                <label for="domainWindow">
+                                    Window size (window)
+                                    <small class="muted">Sliding window size for domain detection (bp)</small>
+                                </label>
+                                <input type="number" id="domainWindow" name="window" value="50000" min="1000" max="100000" step="1000">
+
+                                <label for="domainThreads">
+                                    Threads (threads)
+                                    <small class="muted">Number of CPU threads to use</small>
+                                </label>
+                                <input type="number" id="domainThreads" name="threads" placeholder="auto-detect" min="1" max="32">
+
+                                <label for="domainThreshold">
+                                    Threshold (threshold)
+                                    <small class="muted">Detection confidence threshold (0-1)</small>
+                                </label>
+                                <input type="number" step="0.01" id="domainThreshold" name="threshold" value="0.8" min="0" max="1">
+
+                                <label for="domainCycles">
+                                    Cycles (cycles)
+                                    <small class="muted">Number of detection iterations</small>
+                                </label>
+                                <input type="number" id="domainCycles" name="cycles" value="1" min="1" max="10">
+                            </div>
+
+                            <div class="note">
+                                <strong>Note:</strong> YORO scans sequences in sliding windows to detect conserved protein domains.
+                            </div>
+
+                            <button type="submit">Submit Classification</button>
+                            <pre class="response" id="domainResult"></pre>
+                        </form>
+                    </div>
+
+                    <!-- TAB: COMPLETE ELEMENTS -->
+                    <div id="completeTab" class="card tabContent">
+                        <h2>🧬 Complete LTR-Retrotransposon Detection</h2>
+                        <p class="howto"><strong>Purpose</strong>: Identify and classify <strong>structurally intact LTR-retrotransposons</strong> with complete LTR-internal-LTR architecture.</p>
+
+                        <div class="howto-details">
+                            <h4>What are Complete Elements?</h4>
+                            <p>Complete LTR-retrotransposons have the canonical structure:</p>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace;">
+[TSD] [LTR-5'] --[PBS]--[GAG-POL]--[PPT]-- [LTR-3'] [TSD]
+ 5bp   300-600bp        4-10 kb           300-600bp  5bp</pre>
+
+                            <h4>Input Dataset Example</h4>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+>Complete_Copia_element_Chr1:12345-20000
+TGTTGCATGTCG...ATCGATCG...TGTTGCATGTCG
+>Intact_Gypsy_LTR_RT_scaffold_5
+AGATCTCGATCG...GCTAGCTA...AGATCTCGATCG
+>Full_LTR_retrotransposon_contig_23
+GCTAGCTAGCTA...ATCGATCG...GCTAGCTAGCTA</pre>
+                            <p class="muted"><strong>Requirements:</strong></p>
+                            <ul>
+                                <li>Elements must have <strong>both LTRs</strong> (left and right)</li>
+                                <li>Typical size: <strong>4-15 kb</strong></li>
+                                <li>Best for genome assemblies, long contigs, or curated element collections</li>
+                            </ul>
+
+                            <h4>Available Models & Classifications</h4>
+                            <ul>
+                                <li><strong>Inpactor2</strong> — Structure-based LTR_FINDER + Deep Neural Networks for complete LTR-retrotransposon detection and classification
+                                    <ul style="margin-top: 4px; color: #666;">
+                                        <li><em>Superfamily:</em> Copia (RLC) and Gypsy (RLG)</li>
+                                        <li><em>Lineages/Families:</em></li>
+                                    </ul>
+                                    <div style="margin-left: 24px; color: #666;">
+                                        <p style="margin: 4px 0;"><strong>Copia lineages:</strong> ALE, ALESIA, RETROFIT, ANGELA, BIANCA, IKEROS, IVANA, ORYCO, OSSER, TAR, TORK, SIRE</p>
+                                        <p style="margin: 4px 0;"><strong>Gypsy lineages:</strong> CRM, GALADRIEL, REINA, TEKAY, DEL, ATHILA, TAT</p>
+                                    </div>
+                                </li>
+                                <li><strong>YORO</strong> — Deep Learning for LTR-retrotransposon protein domain detection and classification
+                                    <ul style="margin-top: 4px; color: #666;">
+                                        <li><em>Detection type:</em> Protein domains in LTR-retrotransposons</li>
+                                        <li><em>Domain classes (6):</em></li>
+                                    </ul>
+                                    <div style="margin-left: 24px; color: #666;">
+                                        <p style="margin: 4px 0;"><strong>Domains:</strong> GAG (structural protein), POL (polyprotein), ENV (envelope protein), RT (reverse transcriptase), INT (integrase), AP (aspartic protease), RNASEH (RNase H)</p>
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <h4>Server behavior</h4>
+                            <ul>
+                                <li>The API queues jobs and returns immediately with a job id and output path.</li>
+                                <li>Inpactor2 uses <code>ltr_finder</code> for structural detection followed by neural network classification.</li>
+                            </ul>
+                        </div>
+
+                        <form id="completeForm">
+                            <label>Notification email:
+                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                            </label>
+                            <label>FASTA (file):
+                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                            </label>
+
+                            <input type="hidden" name="model" value="inpactor2" />
+
+                            <div id="completeInpactor2Options" class="form-section" style="margin-top:12px;">
+                                <h3>Inpactor2 Parameters</h3>
+                                <p class="muted" style="margin-bottom: 12px;">
+                                    <strong>⚠️ Important:</strong> Inpactor2 requires complete LTR-RT structures. 
+                                    For fragments, use the <strong>Fragments</strong> tab instead.
+                                </p>
+
+                                <label for="completeThreads">
+                                    Threads (threads)
+                                    <small class="muted">Number of CPU threads to use</small>
+                                </label>
+                                <input type="number" id="completeThreads" name="threads" value="4" min="1" max="32">
+
+                                <label for="completeCycles">
+                                    Cycles (cycles)
+                                    <small class="muted">Number of detection iterations (1-5)</small>
+                                </label>
+                                <input type="number" id="completeCycles" name="cycles" value="1" min="1" max="5">
+
+                                <label for="completeMaxLen">
+                                    Maximum LTR length (maxLen)
+                                    <small class="muted">Maximum LTR region length in base pairs</small>
+                                </label>
+                                <input type="number" id="completeMaxLen" name="maxLen" value="15000" min="100" max="50000" step="100">
+
+                                <label for="completeMinLen">
+                                    Minimum LTR length (minLen)
+                                    <small class="muted">Minimum LTR region length (1000+ for complete elements)</small>
+                                </label>
+                                <input type="number" id="completeMinLen" name="minLen" value="1000" min="100" max="50000" step="100">
+
+                                <label for="completeAnnotate">
+                                    Annotate with RepeatMasker (annotate)
+                                    <small class="muted">Requires RepeatMasker installed</small>
+                                </label>
+                                <select id="completeAnnotate" name="annotate">
+                                    <option value="no" selected>no</option>
+                                    <option value="yes">yes</option>
+                                </select>
+
+                                <label for="completeTgCa">
+                                    Keep only TG-CA-LTRs (tgCa)
+                                    <small class="muted">Filter by canonical TG...CA dinucleotides at LTR boundaries</small>
+                                </label>
+                                <select id="completeTgCa" name="tgCa">
+                                    <option value="no" selected>no</option>
+                                    <option value="yes">yes</option>
+                                </select>
+
+                                <label for="completeTsd">
+                                    Keep only elements with TSD (tsd)
+                                    <small class="muted">Filter by presence of Target Site Duplications</small>
+                                </label>
+                                <select id="completeTsd" name="tsd">
+                                    <option value="no" selected>no</option>
+                                    <option value="yes">yes</option>
+                                </select>
+
+                                <label for="completeCurated">
+                                    Keep only intact elements (curated)
+                                    <small class="muted">Requires complete LTR structure with all features</small>
+                                </label>
+                                <select id="completeCurated" name="curated">
+                                    <option value="yes" selected>yes (complete elements only)</option>
+                                    <option value="no">no (allows partial elements)</option>
+                                </select>
+                            </div>
+
+                            <div class="note">
+                                <strong>Note:</strong> Inpactor2 will reject sequences without proper LTR-RT structure. 
+                                This is expected behavior for fragments or non-LTR elements.
+                            </div>
+
+                            <button type="submit">Submit Classification</button>
+                            <pre class="response" id="completeResult"></pre>
+                        </form>
+                    </div>
+
+                    <div id="mapTab" class="card tabContent">
+                        <h2>Map Labels</h2>
+                        <p class="howto"><strong>Purpose</strong>: Map FASTA headers into hierarchical codes or add actual
+                            labels to an existing predictions CSV.</p>
+
+                        <form id="mapForm">
+                            <label>Notification email:
+                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
+                            </label>
+                            <label>FASTA (file):
+                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
+                            </label>
+
+                            <label>Predictions (CSV) — optional for validation/mapping:
+                                <input type="file" name="predictionsFile" accept=".csv" />
+                            </label>
+
+                            <label>validateOnly:
+                                <select name="validateOnly">
+                                    <option value="false">false</option>
+                                    <option value="true">true (validation only)</option>
+                                </select>
+                            </label>
+
+                            <div class="note">
+                                <strong>Note:</strong> If <code>validateOnly=true</code> the server performs only validation and
+                                will not write a mapped output file.
+                            </div>
+
+                            <button type="submit">Submit /map-labels</button>
+                            <pre class="response" id="mapResult"></pre>
+                        </form>
+                    </div>
+
+                    <div id="evalTab" class="card tabContent">
+                        <h2>Evaluate — Generate Metrics</h2>
+                        <p class="howto"><strong>Purpose</strong>: Compute standardized evaluation metrics from a predictions
+                            CSV (must contain ground-truth labels when required). The job runs asynchronously and returns a job
+                            id immediately.</p>
+
+                        <div class="howto-details">
+                            <h4>Inputs</h4>
+                            <ul>
+                                <li><strong>predictionsFile (CSV)</strong> — required. The CSV should contain at minimum the
+                                    columns used by the evaluator (e.g. <code>Actual_Label</code>,
+                                    <code>Predicted label</code>).
+                                </li>
+                                <li><strong>format</strong> — choose <code>detailed</code>, <code>summary</code> or
+                                    <code>json</code> depending on the output you need.
+                                </li>
+                            </ul>
+
+                            <h4>Server behavior</h4>
+                            <ul>
+                                <li>The server sets <code>verbose=true</code> and will create an output directory automatically
+                                    when omitted.</li>
+                                <li>The evaluator generates JSON and text reports; include Actual_Label in the predictions CSV
+                                    to produce full metrics.</li>
+                            </ul>
+>>>>>>> Stashed changes
                         </div>
 
                         <div id="yoroOptions" class="form-section disabled-field model-specific hidden"

@@ -34,9 +34,9 @@ class EnvironmentManager:
             "inpactor2": {
                 "env_name": "inpactor2_env",
                 "requirements": [
-                    "tensorflow",
-                    "protobuf",
-                    "numpy",
+                    "tensorflow==2.8.0",
+                    "protobuf<4.0",
+                    "numpy<2.0",
                     "biopython", 
                     "pandas",
                     "scikit-learn", 

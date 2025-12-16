@@ -125,11 +125,19 @@ class Inpactor2Runner:
                 cwd=str(TOOL_DIR) 
             )
             
-            if result.returncode != 0:
-                click.echo(f"❌ Erro na execução do Inpactor2 (Exit Code: {result.returncode}):")
-                click.echo("vvvvvvvvv LOG DE ERRO vvvvvvvvv")
+            # Sempre mostrar stdout/stderr para debug
+            if result.stdout:
+                click.echo("=== STDOUT do Inpactor2 ===")
+                click.echo(result.stdout)
+                click.echo("===========================")
+            
+            if result.stderr:
+                click.echo("=== STDERR do Inpactor2 ===")
                 click.echo(result.stderr)
-                click.echo("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                click.echo("===========================")
+            
+            if result.returncode != 0:
+                click.echo(f"❌ Erro na execução do Inpactor2 (Exit Code: {result.returncode})")
                 return False
                 
             if self.verbose:
@@ -140,102 +148,67 @@ class Inpactor2Runner:
             return False
 
        
-        # Look for Inpactor2 output files (Inpactor2_predictions.tab is the main output)
-        predictions_file = temp_dir / "Inpactor2_predictions.tab"
+        # Copiar os arquivos originais do Inpactor2 para o diretório de saída final
+        click.echo(f"📦 Copiando arquivos de saída do Inpactor2...")
         
-        if self.verbose:
-            click.echo(f"🔍 Procurando arquivo de predições: {predictions_file}")
-            all_files = list(temp_dir.iterdir())
-            click.echo(f"   Arquivos no diretório: {[f.name for f in all_files]}")
+        # Principais arquivos de saída do Inpactor2
+        inpactor2_outputs = [
+            "Inpactor2_library.fasta",
+            "Inpactor2_predictions.tab"
+        ]
         
-        raw_output_file = None
+        # Arquivos opcionais (RepeatMasker, se annotate=yes)
+        optional_outputs = [
+            "Inpactor2_anno_summary.txt",
+        ]
         
-        # First, try the standard Inpactor2 output filename
-        if predictions_file.exists() and predictions_file.stat().st_size > 10:
-            raw_output_file = predictions_file
-            if self.verbose:
-                click.echo(f"   ✅ Encontrado: {raw_output_file.name}")
-        else:
-            # Fallback: search for any .tab files
-            output_files = list(temp_dir.glob("*.tab"))
-            candidates = [f for f in output_files if f.stat().st_size > 10 and f.name != "input_sanitized.fasta"] 
-            if candidates:
-                raw_output_file = max(candidates, key=lambda p: p.stat().st_mtime)
-                if self.verbose:
-                    click.echo(f"   ⚠️ Usando fallback: {raw_output_file.name}")
+        copied_files = []
+        for filename in inpactor2_outputs:
+            src = temp_dir / filename
+            dest = output_path / filename
+            if src.exists():
+                shutil.copy2(src, dest)
+                file_size = src.stat().st_size
+                click.echo(f"   ✅ {filename} copiado ({file_size} bytes)")
+                copied_files.append(filename)
+            else:
+                click.echo(f"   ⚠️ {filename} não encontrado (pode indicar que nenhum elemento foi detectado)")
         
-        results = []
+        # Copiar arquivos opcionais se existirem
+        for filename in optional_outputs:
+            src = temp_dir / filename
+            dest = output_path / filename
+            if src.exists():
+                shutil.copy2(src, dest)
+                click.echo(f"   ✅ {filename} copiado (anotação opcional)")
+                copied_files.append(filename)
         
-        if not raw_output_file:
-            click.echo("⚠️ Aviso: Nenhum arquivo de saída válido encontrado.")
-            click.echo(f"   Arquivos no diretório: {list(temp_dir.iterdir())}")
+        # Copiar arquivos do RepeatMasker se existirem (quando annotate=yes)
+        for maskfile in temp_dir.glob("*.masked"):
+            dest = output_path / maskfile.name
+            shutil.copy2(maskfile, dest)
+            click.echo(f"   ✅ {maskfile.name} copiado (RepeatMasker)")
+            copied_files.append(maskfile.name)
+        
+        for gfffile in temp_dir.glob("*.gff"):
+            dest = output_path / gfffile.name
+            shutil.copy2(gfffile, dest)
+            click.echo(f"   ✅ {gfffile.name} copiado (RepeatMasker)")
+            copied_files.append(gfffile.name)
+        
+        if not copied_files:
+            click.echo("⚠️ Aviso: Nenhum arquivo de saída foi copiado.")
             if "There is no LTR retrotransposons" in result.stdout:
-                click.echo("   Inpactor2 não encontrou LTRs válidos.")
-            click.echo("   Gerando CSV com 'Rejected_Inpactor2'.")
-            if self.verbose:
-                click.echo(f"--- STDOUT (últimos 1000 chars) ---\n{result.stdout[-1000:]}")
+                click.echo("   Motivo: Inpactor2 não encontrou LTR-retrotransposons válidos na sequência.")
+            elif "Number of LTR-retrotransposons detected: 0" in result.stdout:
+                click.echo("   Motivo: LTR_FINDER não detectou elementos com estrutura completa [LTR]-[internal]-[LTR].")
+            else:
+                click.echo("   Motivo: Verifique os logs acima para detalhes.")
         else:
-            click.echo(f"🔄 Processando resultados de: {raw_output_file.name}")
-            try:
-                with open(raw_output_file, 'r') as f:
-                    for line in f:
-                        if line.startswith("#") or not line.strip(): continue
-                        parts = line.strip().split('\t')
-                        if len(parts) >= 2:
-                            s_id = parts[0].strip().lstrip('>')
-                            raw_label = parts[2] if len(parts) > 2 else parts[1]
-                            pred_label = raw_label.split('(')[0].strip()
-                            score = 1.0 
-                            orig_id = original_ids_map.get(s_id, s_id)
-                            results.append({
-                                'Sequence ID': orig_id,
-                                'Predicted label': pred_label,
-                                'Final_Confidence_Score': score
-                            })
-            except Exception as e:
-                click.echo(f"❌ Erro ao ler tabela: {e}")
-                return False
-
-       
-        final_df = pd.DataFrame(results)
-        all_ids_df = pd.DataFrame({'Sequence ID': list(original_ids_map.values())})
+            click.echo(f"✅ {len(copied_files)} arquivo(s) copiado(s) para: {output_path}")
         
-        if not final_df.empty:
-            final_df = pd.merge(all_ids_df, final_df, on='Sequence ID', how='left')
-        else:
-            final_df = all_ids_df
-            final_df['Predicted label'] = None
-            final_df['Final_Confidence_Score'] = 0.0
-
-        final_df['Predicted label'] = final_df['Predicted label'].fillna('Rejected_Inpactor2')
-        final_df['Final_Confidence_Score'] = final_df['Final_Confidence_Score'].fillna(0.0)
-
-        final_file = output_path / "predicted_results.csv"
-        final_df.to_csv(final_file, index=False)
-        click.echo(f"📊 Resultados salvos em: {final_file}")
-
-    
-        if not TREE_FILE_PATH.exists():
-            click.echo(f"⚠️ Aviso: Arquivo de hierarquia não encontrado em: {TREE_FILE_PATH}")
-            click.echo("   Algumas métricas hierárquicas e mapeamentos podem falhar.")
-
-        if self.auto_label and FASTALabelMapper:
-            click.echo(f"\n🏷️  Mapeando labels verdadeiros...")
-            try:
-                
-                mapper = FASTALabelMapper(tree_file=str(TREE_FILE_PATH))
-                mapper.add_actual_labels_to_predictions(str(final_file), str(input_path))
-            except Exception as e:
-                click.echo(f"⚠️ Erro no mapeamento: {e}")
-
-        if not self.skip_evaluation and TEMetricsEvaluator and final_file.exists():
-            click.echo(f"\n🔬 Executando avaliação de métricas...")
-            try:
-                
-                evaluator = TEMetricsEvaluator(hierarchy_file=str(TREE_FILE_PATH))
-                evaluator.evaluate_predictions(str(final_file), str(output_path))
-            except Exception as e:
-                click.echo(f"⚠️ Erro na avaliação: {e}")
+        # NÃO gerar CSV, NÃO mapear labels, NÃO calcular métricas
+        # O Inpactor2 já gerou seus próprios arquivos de saída que serão enviados por email
 
         if self.clean_temp:
             click.echo("🧹 Limpando arquivos temporários...")

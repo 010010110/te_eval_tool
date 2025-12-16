@@ -132,80 +132,17 @@ class YORORunner:
             click.echo(f"Erro: Arquivo de saida do YORO nao encontrado.")
             return False
             
-        click.echo(f"Saida tabular do YORO gerada.")
+        click.echo(f"✅ Saida tabular do YORO gerada.")
 
-        # padronizar
-        click.echo("Convertendo para CSV...")
+        # Copiar arquivo nativo do YORO para diretório de saída
+        click.echo("📋 Copiando arquivo nativo do YORO...")
         try:
-            yoro_df = pd.read_csv(yoro_output_file, sep='\t')
-            yoro_df.columns = yoro_df.columns.str.replace('|', '', regex=False).str.strip()
-            for col in yoro_df.columns:
-                if yoro_df[col].dtype == object:
-                    yoro_df[col] = yoro_df[col].astype(str).str.replace('|', '', regex=False).str.strip()
-
-            if 'ProbabilityClass' in yoro_df.columns:
-                best_predictions = yoro_df.loc[yoro_df.groupby('id')['ProbabilityClass'].idxmax()]
-            else:
-                best_predictions = yoro_df.groupby('id').first().reset_index()
-                best_predictions['ProbabilityClass'] = 0.0
-            
-            final_df = best_predictions[['id', 'Class', 'ProbabilityClass']].copy()
-            final_df.columns = ['sanitized_id', 'Predicted label', 'Final_Confidence_Score']
-            final_df['sanitized_id'] = final_df['sanitized_id'].astype(str).str.lstrip('>')
-            
-            master_df = pd.DataFrame({
-                'Sequence ID': original_ids,
-                'sanitized_id': [id.replace('#', '_').replace('|', '_') for id in original_ids]
-            })
-            
-            merged_df = pd.merge(master_df, final_df, on='sanitized_id', how='left')
-            merged_df['Predicted label'] = merged_df['Predicted label'].fillna('Unknown_YORO')
-            merged_df['Final_Confidence_Score'] = merged_df['Final_Confidence_Score'].fillna(0.0)
-            
-            final_csv_df = merged_df[['Sequence ID', 'Predicted label', 'Final_Confidence_Score']]
-            
-            final_file = output_path / "predicted_results.csv"
-            final_csv_df.to_csv(final_file, index=False)
-            
-            click.echo(f"📊 Resultados convertidos e salvos em: {final_file}")
-
+            final_output_file = output_path / "YORO_output.tab"
+            shutil.copy2(yoro_output_file, final_output_file)
+            click.echo(f"✅ Arquivo YORO_output.tab salvo em: {final_output_file}")
         except Exception as e:
-            click.echo(f"Erro ao converter saida do YORO: {e}")
+            click.echo(f"❌ Erro ao copiar saida do YORO: {e}")
             return False
-
-        # Avaliacao
-        
-        if self.auto_label and FASTALabelMapper:
-            click.echo(f"\n🏷️  Mapeando labels automaticamente...")
-            try:
-                # Provide the mapper with the correct tree.txt path inside CLI/src/nodes
-                tree_file = Path(__file__).parents[2] / 'nodes' / 'tree.txt'
-                mapper = FASTALabelMapper(tree_file=str(tree_file))
-
-                # Call mapper to update the CSV file
-                mapper.add_actual_labels_to_predictions(
-                    str(final_file.resolve()),
-                    str(Path(self.input_file).resolve()),
-                    output_csv=str(final_file.resolve())
-                )
-
-                df_check = pd.read_csv(final_file)
-                if 'Actual_Label' in df_check.columns and df_check['Actual_Label'].notna().any():
-                    actual_count = df_check['Actual_Label'].notna().sum()
-                    click.echo(f"✅ Labels mapeados com sucesso! {actual_count} valores preenchidos")
-                else:
-                    click.echo("⚠️ Falha no mapeamento de labels.")
-            except Exception as e:
-                click.echo(f"⚠️ Erro no mapeamento automático: {str(e)}")
-        
-        if not self.skip_evaluation and TEMetricsEvaluator and final_file.exists():
-            click.echo(f"\n🔬 Executando avaliação automática...")
-            try:
-                evaluator = TEMetricsEvaluator()
-                evaluator.evaluate_predictions(str(final_file), str(output_path))
-                click.echo("✅ Avaliação automática concluída!")
-            except Exception as e:
-                click.echo(f"⚠️ Erro na avaliação automática: {str(e)}")
 
         if self.clean_temp:
             click.echo("🧹 Limpando arquivos temporários do YORO...")
