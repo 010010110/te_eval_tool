@@ -363,8 +363,14 @@ class FASTALabelMapper:
 
                         hierarchical_code = self.map_to_hierarchical_code(parsed)
                         
-
-                        hierarchical_label = self.hierarchy_map.get(hierarchical_code, 'Unknown') if hierarchical_code else 'Unknown'
+                        # Use the last element after ':' in the header as the actual label
+                        # This ensures ALTR2_Ttr:ClassI:LTR:ERV -> ERV (not LTR)
+                        # and AGM1:ClassI:LTR:Bel-Pao -> Bel-Pao (not just LTR)
+                        if ':' in full_header:
+                            hierarchical_label = full_header.split(':')[-1].strip()
+                        else:
+                            # Fallback to hierarchy_map if no ':' separator found
+                            hierarchical_label = self.hierarchy_map.get(hierarchical_code, parsed['family_level']) if hierarchical_code else parsed['family_level']
                         
                         mapping = {
                             'sequence_id': full_header, # FULL HEADER to match ClassifyTE output

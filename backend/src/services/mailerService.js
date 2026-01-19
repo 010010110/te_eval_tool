@@ -102,15 +102,15 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir, cli
             </div>`;
     }
 
-    const subject = `✅ Job '${jobType}' Concluído com Sucesso!`;
+    const subject = `✅ Job '${jobType}' Completed Successfully!`;
 
     const resultsPathDisplay = path.normalize(outputDir).replace(/^(\.\.\/data\/|\/app\/data\/)/, 'results/');
 
     const attachmentMessage = attachments.length > 0
         ? (metricsFiles.length > 0 
-            ? `✅ **${attachments.length} arquivo(s)** anexado(s), incluindo **${metricsFiles.length} arquivo(s) de métricas/relatórios**:`
-            : `Os **${attachments.length}** arquivos de resultado estão anexados diretamente a este e-mail:`)
-        : `O job foi concluído, mas nenhum arquivo foi encontrado para anexar no diretório ${resultsPathDisplay}.`;
+            ? `✅ **${attachments.length} file(s)** attached, including **${metricsFiles.length} metrics/report file(s)**:`
+            : `The **${attachments.length}** result files are attached directly to this email:`)
+        : `The job was completed, but no files were found to attach in the directory ${resultsPathDisplay}.`;
 
     const mailOptions = {
         from: process.env.MAIL_FROM || process.env.SMTP_USER,
@@ -162,13 +162,13 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir, cli
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h2 style="margin: 0;">✅ Job Concluído com Sucesso!</h2>
+                            <h2 style="margin: 0;">✅ Job Completed Successfully!</h2>
                         </div>
                         
                         <div class="content">
-                            <h3 style="color: #4CAF50;">Processamento da TE Evaluation Tool</h3>
+                            <h3 style="color: #4CAF50;">TE Evaluation Tool Processing</h3>
                             
-                            <p>O seu job de <b>${jobType.toUpperCase()}</b> foi concluído com sucesso e os resultados estão prontos para análise.</p>
+                            <p>Your <b>${jobType.toUpperCase()}</b> job has been completed successfully and the results are ready for analysis.</p>
                             
                             ${cliParamsHTML}
                             
@@ -178,9 +178,9 @@ exports.sendSuccessNotification = async (recipientEmail, jobType, outputDir, cli
 
                             <br>
                             
-                            <p>Obrigado por usar a ferramenta.</p>
+                            <p>Thank you for using the tool.</p>
                             
-                            <small style="color: #999999;">Esta é uma notificação automática.</small>
+                            <small style="color: #999999;">This is an automated notification.</small>
                         </div>
                     </div>
                 </body>
@@ -208,7 +208,7 @@ exports.sendFailureNotification = async (recipientEmail, jobType, errorMessage) 
         return;
     }
 
-    const subject = `❌ FALHA Crítica no Job '${jobType}'!`;
+    const subject = `❌ CRITICAL FAILURE in Job '${jobType}'!`;
 
     const mailOptions = {
         from: process.env.MAIL_FROM || process.env.SMTP_USER,
@@ -217,16 +217,16 @@ exports.sendFailureNotification = async (recipientEmail, jobType, errorMessage) 
         html: `
             <html>
                 <body>
-                    <h2>Processamento da TE Evaluation Tool Falhou</h2>
-                    <p>O seu job de <b>${jobType.toUpperCase()}</b> não pôde ser concluído devido a um erro.</p>
+                    <h2>TE Evaluation Tool Processing Failed</h2>
+                    <p>Your <b>${jobType.toUpperCase()}</b> job could not be completed due to an error.</p>
                     
-                    <p><b>Detalhes do Erro (Traceback da CLI):</b></p>
+                    <p><b>Error Details (CLI Traceback):</b></p>
                     
                     <pre style="background-color: #ffe0e0; border: 1px solid #ff0000; padding: 15px; border-radius: 5px; font-size: 0.85em; overflow-x: auto;">
                         ${errorMessage}
                     </pre>
                     
-                    <p>Por favor, revise o erro acima e tente novamente.</p>
+                    <p>Please review the error above and try again.</p>
                 </body>
             </html>
         `,

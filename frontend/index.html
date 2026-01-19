@@ -73,100 +73,11 @@
                             <li>YORO</li>
                             <li>ClassifyTE</li>
                             <li>TERL</li>
+                            <li>Inpactor2</li>
                         </ul>
                     </div>
                 </aside>
                 <div class="layout-main">
-<<<<<<< Updated upstream
-        <section class="forms">
-            <div class="tabs">
-                <button class="tab active" data-tab="runTab">Run</button>
-                <button class="tab" data-tab="mapTab">Map Labels</button>
-                <button class="tab" data-tab="evalTab">Evaluate</button>
-            </div>
-
-            <div id="runTab" class="card tabContent active">
-                <h2>Run — Classification</h2>
-                <p class="howto"><strong>Purpose</strong>: Start an asynchronous classification job. Upload a FASTA file
-                    and choose a model to run; the server will queue the job and return immediately with a job id and
-                    output path. Some parameters are enforced by the server.</p>
-
-                <div class="howto-details">
-                    <h4>Inputs</h4>
-                    <ul>
-                        <li><strong>FASTA (file)</strong> — required. FASTA file with sequence headers expected by the
-                            selected model.</li>
-                        <li><strong>model</strong> — choose one of <em>classifyte</em>, <em>terl</em>, or <em>yoro</em>.
-                        </li>
-                        <li><strong>modelFile</strong> — optional selection of the model to use (lists available models
-                            for the selected model type).</li>
-                        <li><strong>ClassifyTE-specific</strong> options: <code>algorithm</code> (LCPNB or NLLCPN) and
-                        <li><strong>YORO-specific</strong> options: <code>window</code>, <code>threads</code>,
-                            <code>threshold</code>, <code>cycles</code>, and <code>autoLabel</code>.
-                        </li>
-                    </ul>
-
-                    <h4>Server behavior</h4>
-                    <ul>
-                        <li>The API queues jobs and returns immediately with a job id and output path.</li>
-                        <li>The server will auto-generate the output directory when you omit it.</li>
-                        <li>Server-enforced flags: <code>clean=true</code>, <code>verbose=true</code>, and
-                            <code>autoLabel=true</code> for /run. You can still pass these fields but the server may
-                            override them.
-                        </li>
-                    </ul>
-                </div>
-
-                    <form id="runForm">
-                        <label>Notification email:
-                            <input type="email" name="notificationEmail" placeholder="you@example.com" required />
-                        </label>
-                    <label>FASTA (file):
-                        <input type="file" name="fastaFile" accept=".fasta,.fa" required />
-                    </label>
-
-                    <label>Model:
-                        <select name="model">
-                            <option value="classifyte">classifyte</option>
-                            <option value="terl">terl</option>
-                            <option value="yoro">yoro</option>
-                            <option value="inpactor2">inpactor2</option>
-                        </select>
-                    </label>
-
-                    <div id="modelOptions">
-                        <!-- Model-specific options will appear here based on selected model -->
-                        <label id="modelFileLabel">modelFile (optional):
-                            <select name="modelFile" id="modelFileSelect">
-                                <!-- populated by app.js -->
-                            </select>
-                        </label>
-
-                        <div id="classifyteOpts" class="model-specific hidden">
-                            <div id="algorithmGroup">
-                                <label for="algorithm">Hierarchical Algorithm (ClassifyTE Only):</label>
-                                <select id="algorithm" name="algorithm">
-                                    <option value="lcpnb" selected>LCPNB</option>
-                                    <option value="nllcpn">NLLCPN</option>
-                                </select>
-                            </div>
-
-                            <div class="models-list">
-                                <strong>Available ClassifyTE models:</strong>
-                                <ul id="classifyteModelList">
-                                    <li>ClassifyTE_combined</li>
-                                    <li>ClassifyTE_pgsb</li>
-                                    <li>ClassifyTE_repbase</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div id="terlOpts" class="model-specific hidden">
-                            <div class="models-list small">
-                                <strong>Available TERL model folders:</strong>
-                                <ul id="terlModelList"></ul>
-                            </div>
-=======
                 <section class="forms">
                     <div class="tabs">
                         <button class="tab active" data-tab="fragmentTab">Fragments</button>
@@ -174,6 +85,7 @@
                         <button class="tab" data-tab="completeTab">Complete Elements</button>
                         <button class="tab" data-tab="mapTab">Map Labels</button>
                         <button class="tab" data-tab="evalTab">Evaluate</button>
+                        <button class="tab" data-tab="visualizeTab">📊 Visualize Metrics</button>
                     </div>
 
                     <!-- TAB: FRAGMENTS -->
@@ -191,7 +103,7 @@
                             </ul>
 
                             <h4>Input Dataset Example</h4>
-                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                            <pre style="background: #1a2332; color: #7EE7B8; padding: 10px; border-radius: 4px;">
 >TE_fragment_1
 ATCGATCGATCGATCGATCGATCG...
 >Partial_Copia_LTR
@@ -203,19 +115,47 @@ GCTAGCTAGCTAGCTAGCTA...</pre>
                             <h4>Available Models</h4>
                             <ul>
                                 <li><strong>ClassifyTE</strong> — Hierarchical stacking machine learning using k-mer features
-                                    <ul style="margin-top: 4px; color: #666;">
-                                        <li><em>Retrotransposons:</em> LTR (Copia, Gypsy, Bel-Pao), DIRS, LINE (R2, RTE, Jockey, L1, I), SINE (tRNA, 7SL, 5S)</li>
-                                        <li><em>DNA transposons:</em> TIRs (Tc1-Mariner, hAT, Mutator, Merlin, Transib, P, PiggyBac, PIF-Harbinger, CACTA)</li>
-                                    </ul>
+                                    <div style="margin-top: 8px; margin-left: 16px;">
+                                        <p style="margin: 4px 0; color: #444;"><strong>📦 ClassifyTE_combined (26 classes):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li><em>Class I Retrotransposons:</em> LTR (Copia, Gypsy, Bel-Pao), DIRS, LINE (R2, RTE, Jockey, L1, I), SINE (tRNA, 7SL, 5S)</li>
+                                            <li><em>Class II DNA transposons:</em> TIRs (Tc1-Mariner, hAT, Mutator, Merlin, Transib, P, PiggyBac, PIF-Harbinger, CACTA)</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>📦 ClassifyTE_pgsb (9 classes - plant-focused):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li><em>Focus:</em> Plant-specific TE families from PGSB database</li>
+                                            <li><em>Classes:</em> LTR (Copia, Gypsy), LINE, SINE, Mutator, PIF-Harbinger, CACTA</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>📦 ClassifyTE_repbase (24 classes - comprehensive):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li><em>Source:</em> RepBase curated database</li>
+                                            <li><em>Coverage:</em> Complete hierarchical classification from Class I/II down to specific superfamilies</li>
+                                        </ul>
+                                    </div>
                                 </li>
-                                <li><strong>TERL</strong> — Convolutional neural network for deep learning classification
-                                    <ul style="margin-top: 4px; color: #666;">
-                                        <li><em>DS1:</em> Superfamilies (Copia, Gypsy, Bel-Pao, ERV, L1, Tc1-Mariner, hAT)</li>
-                                        <li><em>DS2:</em> Orders (Class II, LTR, LINE)</li>
-                                        <li><em>DS3:</em> Extended superfamilies (Copia, Gypsy, Bel-Pao, ERV, L1, SINE, Tc1-Mariner, hAT, Mutator, PIF-Harbinger, CACTA)</li>
-                                        <li><em>DS4:</em> Extended orders (Class II, LTR, LINE, SINE)</li>
-                                        <li><em>DS5:</em> RepBase-trained (Class II, LTR, LINE)</li>
-                                    </ul>
+                                <li style="margin-top: 12px;"><strong>TERL</strong> — Convolutional neural network for deep learning classification
+                                    <div style="margin-top: 8px; margin-left: 16px;">
+                                        <p style="margin: 4px 0; color: #444;"><strong>🧬 DS1 (7 superfamilies - RepBase):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li>Copia, Gypsy, Bel-Pao, ERV, L1, Tc1-Mariner, hAT</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>🧬 DS2 (3 orders - RepBase):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li>Class II, LTR, LINE</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>🧬 DS3 (11 superfamilies - 7 databases):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li>Copia, Gypsy, Bel-Pao, ERV, L1, SINE, Tc1-Mariner, hAT, Mutator, PIF-Harbinger, CACTA</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>🧬 DS4 (4 orders - 7 databases):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li>Class II, LTR, LINE, SINE</li>
+                                        </ul>
+                                        <p style="margin: 8px 0 4px 0; color: #444;"><strong>🧬 DS5 (3 orders - cross-database validation):</strong></p>
+                                        <ul style="color: #666;">
+                                            <li>Class II, LTR, LINE (trained on RepBase, tested on other databases)</li>
+                                        </ul>
+                                    </div>
                                 </li>
                             </ul>
 
@@ -262,20 +202,51 @@ GCTAGCTAGCTAGCTAGCTA...</pre>
                                     <div class="models-list">
                                         <strong>Available ClassifyTE models:</strong>
                                         <ul id="fragmentClassifyteModelList">
-                                            <li>ClassifyTE_combined</li>
-                                            <li>ClassifyTE_pgsb</li>
-                                            <li>ClassifyTE_repbase</li>
+                                            <li>
+                                                <strong>ClassifyTE_combined</strong> (26 classes)
+                                                <ul style="margin-left: 16px; color: #666; font-size: 0.9em;">
+                                                    <li><em>Class I:</em> LTR (Copia, Gypsy, Bel-Pao), DIRS, LINE (R2, RTE, Jockey, L1, I), SINE (tRNA, 7SL, 5S)</li>
+                                                    <li><em>Class II:</em> TIRs (Tc1-Mariner, hAT, Mutator, Merlin, Transib, P, PiggyBac, PIF-Harbinger, CACTA)</li>
+                                                </ul>
+                                            </li>
+                                            <li style="margin-top: 8px;">
+                                                <strong>ClassifyTE_pgsb</strong> (9 classes - plant-focused)
+                                                <ul style="margin-left: 16px; color: #666; font-size: 0.9em;">
+                                                    <li><em>Class I:</em> LTR (Copia, Gypsy), LINE, SINE</li>
+                                                    <li><em>Class II:</em> Mutator, PIF-Harbinger, CACTA</li>
+                                                </ul>
+                                            </li>
+                                            <li style="margin-top: 8px;">
+                                                <strong>ClassifyTE_repbase</strong> (24 classes - RepBase)
+                                                <ul style="margin-left: 16px; color: #666; font-size: 0.9em;">
+                                                    <li><em>Class I:</em> LTR (Copia, Gypsy, Bel-Pao), DIRS, LINE (R2, RTE, Jockey, L1, I), SINE (tRNA, 7SL, 5S)</li>
+                                                    <li><em>Class II:</em> TIRs (Tc1-Mariner, hAT, Mutator, Merlin, Transib, P, PiggyBac, PIF-Harbinger, CACTA)</li>
+                                                </ul>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
 
                                 <div id="fragmentTerlOpts" class="model-specific hidden">
                                     <div class="models-list small">
-                                        <strong>Available TERL model folders:</strong>
+                                        <strong>Available TERL datasets:</strong>
                                         <ul id="fragmentTerlModelList">
-                                            <li>DS1</li>
-                                            <li>DS3</li>
+                                            <li>
+                                                <strong>DS1</strong> (7 superfamilies - RepBase)
+                                                <ul style="margin-left: 16px; color: #666; font-size: 0.9em;">
+                                                    <li>Copia, Gypsy, Bel-Pao, ERV, L1, Tc1-Mariner, hAT</li>
+                                                </ul>
+                                            </li>
+                                            <li style="margin-top: 8px;">
+                                                <strong>DS3</strong> (11 superfamilies - 7 databases)
+                                                <ul style="margin-left: 16px; color: #666; font-size: 0.9em;">
+                                                    <li>Copia, Gypsy, Bel-Pao, ERV, L1, SINE, Tc1-Mariner, hAT, Mutator, PIF-Harbinger, CACTA</li>
+                                                </ul>
+                                            </li>
                                         </ul>
+                                        <p style="margin-top: 12px; color: #888; font-size: 0.85em;">
+                                            <strong>Other datasets:</strong> DS2 (Class II, LTR, LINE), DS4 (Class II, LTR, LINE, SINE), DS5 (Class II, LTR, LINE) - for order-level classification
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -307,7 +278,7 @@ GCTAGCTAGCTAGCTAGCTA...</pre>
                             </ul>
 
                             <h4>Input Dataset Example</h4>
-                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                            <pre style="background: #1a2332; color: #7EE7B8; padding: 10px; border-radius: 4px;">
 >RT_domain_sequence_1
 ATGGCTAGCTAGCTAGCATGCTAGCTAGC...
 >Integrase_region_2
@@ -399,12 +370,12 @@ TGATCGATCGATCGATCGATCGATCGATC...</pre>
                         <div class="howto-details">
                             <h4>What are Complete Elements?</h4>
                             <p>Complete LTR-retrotransposons have the canonical structure:</p>
-                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace;">
+                            <pre style="background: #1a2332; color: #7EE7B8; padding: 10px; border-radius: 4px; font-family: monospace;">
 [TSD] [LTR-5'] --[PBS]--[GAG-POL]--[PPT]-- [LTR-3'] [TSD]
  5bp   300-600bp        4-10 kb           300-600bp  5bp</pre>
 
                             <h4>Input Dataset Example</h4>
-                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                            <pre style="background: #1a2332; color: #7EE7B8; padding: 10px; border-radius: 4px;">
 >Complete_Copia_element_Chr1:12345-20000
 TGTTGCATGTCG...ATCGATCG...TGTTGCATGTCG
 >Intact_Gypsy_LTR_RT_scaffold_5
@@ -536,154 +507,6 @@ GCTAGCTAGCTA...ATCGATCG...GCTAGCTAGCTA</pre>
                         </form>
                     </div>
 
-                    <div id="mapTab" class="card tabContent">
-                        <h2>Map Labels</h2>
-                        <p class="howto"><strong>Purpose</strong>: Map FASTA headers into hierarchical codes or add actual
-                            labels to an existing predictions CSV.</p>
-
-                        <form id="mapForm">
-                            <label>Notification email:
-                                <input type="email" name="notificationEmail" placeholder="you@example.com" required />
-                            </label>
-                            <label>FASTA (file):
-                                <input type="file" name="fastaFile" accept=".fasta,.fa" required />
-                            </label>
-
-                            <label>Predictions (CSV) — optional for validation/mapping:
-                                <input type="file" name="predictionsFile" accept=".csv" />
-                            </label>
-
-                            <label>validateOnly:
-                                <select name="validateOnly">
-                                    <option value="false">false</option>
-                                    <option value="true">true (validation only)</option>
-                                </select>
-                            </label>
-
-                            <div class="note">
-                                <strong>Note:</strong> If <code>validateOnly=true</code> the server performs only validation and
-                                will not write a mapped output file.
-                            </div>
-
-                            <button type="submit">Submit /map-labels</button>
-                            <pre class="response" id="mapResult"></pre>
-                        </form>
-                    </div>
-
-                    <div id="evalTab" class="card tabContent">
-                        <h2>Evaluate — Generate Metrics</h2>
-                        <p class="howto"><strong>Purpose</strong>: Compute standardized evaluation metrics from a predictions
-                            CSV (must contain ground-truth labels when required). The job runs asynchronously and returns a job
-                            id immediately.</p>
-
-                        <div class="howto-details">
-                            <h4>Inputs</h4>
-                            <ul>
-                                <li><strong>predictionsFile (CSV)</strong> — required. The CSV should contain at minimum the
-                                    columns used by the evaluator (e.g. <code>Actual_Label</code>,
-                                    <code>Predicted label</code>).
-                                </li>
-                                <li><strong>format</strong> — choose <code>detailed</code>, <code>summary</code> or
-                                    <code>json</code> depending on the output you need.
-                                </li>
-                            </ul>
-
-                            <h4>Server behavior</h4>
-                            <ul>
-                                <li>The server sets <code>verbose=true</code> and will create an output directory automatically
-                                    when omitted.</li>
-                                <li>The evaluator generates JSON and text reports; include Actual_Label in the predictions CSV
-                                    to produce full metrics.</li>
-                            </ul>
->>>>>>> Stashed changes
-                        </div>
-
-                        <div id="yoroOptions" class="form-section disabled-field model-specific hidden"
-                            style="margin-top:12px;">
-                            <h3>YORO options (only for model = YORO)</h3>
-                            <label for="window">Window size (window)</label>
-                            <input type="number" id="window" name="window" value="50000" min="1">
-
-                            <label for="threads">Threads (threads)</label>
-                            <input type="number" id="threads" name="threads"
-                                placeholder="leave empty to use available cores">
-
-                            <label for="threshold">Threshold (threshold)</label>
-                            <input type="number" step="0.01" id="threshold" name="threshold" value="0.8" min="0"
-                                max="1">
-
-                            <label for="cycles">Cycles (cycles)</label>
-                            <input type="number" id="cycles" name="cycles" value="1" min="1">
-
-                            <div class="models-list">
-                                <strong>Available YORO models:</strong>
-                                <ul id="yoroModelList">
-                                    <li>AAqqYOLOqqdomainqqV21</li>
-                                    <li>AAqqYOLOqqdomainqqV25</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div id="inpactor2Options" class="form-section disabled-field model-specific hidden"
-                            style="margin-top:12px;">
-                            <h3>Inpactor2 options (only for model = Inpactor2)</h3>
-                            
-                            <label for="inpactor2Threads">Threads (threads)</label>
-                            <input type="number" id="inpactor2Threads" name="threads" value="4" min="1">
-
-                            <label for="inpactor2Cycles">Cycles (cycles)</label>
-                            <input type="number" id="inpactor2Cycles" name="cycles" value="1" min="1" max="5">
-
-                            <label for="maxLen">Maximum LTR length (maxLen)</label>
-                            <input type="number" id="maxLen" name="maxLen" value="15000" min="1" max="50000">
-
-                            <label for="minLen">Minimum LTR length (minLen)</label>
-                            <input type="number" id="minLen" name="minLen" value="1000" min="1" max="50000">
-
-                            <label for="annotate">Annotate with RepeatMasker (annotate)</label>
-                            <select id="annotate" name="annotate">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="tgCa">Keep only TG-CA-LTRs (tgCa)</label>
-                            <select id="tgCa" name="tgCa">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="tsd">Keep only elements with TSD (tsd)</label>
-                            <select id="tsd" name="tsd">
-                                <option value="no" selected>no</option>
-                                <option value="yes">yes</option>
-                            </select>
-
-                            <label for="curated">Keep only intact elements (curated)</label>
-                            <select id="curated" name="curated">
-                                <option value="yes" selected>yes</option>
-                                <option value="no">no</option>
-                            </select>
-
-                            <div class="models-list">
-                                <strong>Available Inpactor2 installation:</strong>
-                                <ul id="inpactor2ModelList">
-                                    <li>Inpactor2</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="note">
-                        <strong>Note:</strong> The server enforces defaults for several parameters (for example,
-                        clean=true, verbose=true and autoLabel=true for /run). You do not need to provide those—server
-                        will apply them.
-                    </div>
-
-                    <button type="submit">Submit /run</button>
-                    <pre class="response" id="runResult"></pre>
-                </form>
-            </div>
-
             <div id="mapTab" class="card tabContent">
                 <h2>Map Labels</h2>
                 <p class="howto"><strong>Purpose</strong>: Map FASTA headers into hierarchical codes or add actual
@@ -788,31 +611,178 @@ GCTAGCTAGCTA...ATCGATCG...GCTAGCTAGCTA</pre>
                     <pre class="response" id="evalResult"></pre>
                 </form>
             </div>
+
+            <!-- TAB: VISUALIZE METRICS -->
+            <div id="visualizeTab" class="card tabContent">
+                <h2>📊 Visualize Metrics</h2>
+                <p class="howto"><strong>Purpose</strong>: Upload and visualize evaluation reports with interactive charts and detailed metrics analysis.</p>
+
+                <div class="howto-details">
+                    <h4>Features</h4>
+                    <ul>
+                        <li><strong>Interactive Charts</strong> — View performance metrics with beautiful, responsive visualizations</li>
+                        <li><strong>Multiple Formats</strong> — Supports both <code>evaluation_report.txt</code> and <code>metrics_summary.json</code> files</li>
+                        <li><strong>Comprehensive Analysis</strong> — Overall metrics, advanced metrics, hierarchical metrics, and per-class performance</li>
+                        <li><strong>Drag & Drop</strong> — Simply drag your report file to upload it</li>
+                    </ul>
+
+                    <h4>How to Use</h4>
+                    <ol>
+                        <li>First, run an evaluation using the <strong>Evaluate</strong> tab above</li>
+                        <li>Download the generated <code>evaluation_report.txt</code> or <code>metrics_summary.json</code> from the results</li>
+                        <li>Click the button below to open the visualization page</li>
+                        <li>Upload your report file to see the metrics visualized with charts and graphs</li>
+                    </ol>
+
+                    <h4>Available Visualizations</h4>
+                    <ul>
+                        <li><strong>Overall Performance</strong> — Bar chart showing Accuracy, Precision, Recall, F1-Score, and Specificity</li>
+                        <li><strong>Advanced Metrics</strong> — Radar chart displaying Cohen's Kappa, Matthews Correlation, Youden's J, and F1 consistency</li>
+                        <li><strong>Hierarchical Metrics</strong> — Line chart comparing standard vs hierarchical classification metrics</li>
+                        <li><strong>Per-Class Performance</strong> — Detailed table and chart showing metrics for each classification class</li>
+                    </ul>
+                </div>
+
+                <div style="text-align: center; padding: 40px 0;">
+                    <a href="metrics_visualization.html" target="_blank" style="display: inline-block; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #02121a; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease;">
+                        Open Metrics Visualization Page
+                    </a>
+                    <p class="muted" style="margin-top: 15px; font-size: 13px;">Opens in a new tab</p>
+                </div>
+
+                <div class="note" style="margin-top: 30px;">
+                    <strong>💡 Tip:</strong> The visualization page works completely client-side - your data stays in your browser and is never uploaded to any server.
+                </div>
+            </div>
         </section>
 
         <section class="info">
-            <h3>Quick reference — endpoints</h3>
+            <h3>Quick reference — workflow tabs</h3>
 
             <div class="endpoint">
-                <h4>/run — classification</h4>
-                <p><strong>Purpose:</strong> Classify transposable elements in DNA sequences using machine learning models. Upload a FASTA file containing DNA sequences and select a classification model (ClassifyTE, TERL, or YORO). The system automatically labels sequences, runs the selected model, and optionally evaluates the results against known annotations.</p>
+                <h4>🧬 Fragments — Fragment Classification</h4>
+                <p><strong>Purpose:</strong> Classify broken or incomplete transposable element fragments using sequence-based machine learning.</p>
+                <p style="margin-top: 8px;"><strong>Models available:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li><strong>ClassifyTE</strong> — Hierarchical k-mer + ML (LCPNB/NLLCPN algorithms)
+                        <ul style="margin-left: 16px; font-size: 0.9em;">
+                            <li>ClassifyTE_combined: 26 classes (comprehensive)</li>
+                            <li>ClassifyTE_pgsb: 9 classes (plant-focused)</li>
+                            <li>ClassifyTE_repbase: 24 classes (RepBase curated)</li>
+                        </ul>
+                    </li>
+                    <li><strong>TERL</strong> — Convolutional Neural Network (CNN)
+                        <ul style="margin-left: 16px; font-size: 0.9em;">
+                            <li>DS1: 7 superfamilies | DS2: 3 orders | DS3: 11 superfamilies | DS4: 4 orders | DS5: 3 orders</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Best for:</strong> Degraded sequences, truncated elements, sequencing artifacts (100 bp to several kb)</p>
             </div>
 
             <div class="endpoint">
-                <h4>/map-labels — FASTA header mapping</h4>
-                <p><strong>Purpose:</strong> Standardize and validate FASTA sequence headers according to a hierarchical taxonomy. This command maps custom or inconsistent sequence labels to a unified classification tree, ensuring compatibility across different tools and datasets. Useful for preparing datasets or validating existing annotations.</p>
+                <h4>🔬 Domains — Protein Domain Detection</h4>
+                <p><strong>Purpose:</strong> Identify conserved functional domains in LTR-retrotransposon proteins.</p>
+                <p style="margin-top: 8px;"><strong>Model available:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li><strong>YORO</strong> — Deep Neural Network (YOLO-inspired sliding window)
+                        <ul style="margin-left: 16px; font-size: 0.9em;">
+                            <li><strong>Detectable domains:</strong> RT (Reverse Transcriptase), GAG (Structural), ENV (Envelope), INT (Integrase), AP (Aspartic Protease), RNASEH (RNase H)</li>
+                            <li><strong>Parameters:</strong> Window size, detection threshold, cycles, threads</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Best for:</strong> Protein-coding regions, domain annotation, functional characterization</p>
             </div>
 
             <div class="endpoint">
-                <h4>/evaluate — metrics</h4>
-                <p><strong>Purpose:</strong> Assess classification model performance by computing comprehensive metrics (precision, recall, F1-score, confusion matrices). Compare predicted labels against ground-truth annotations to quantify model accuracy at multiple taxonomic levels. Produces both human-readable reports and machine-readable JSON output.</p>
+                <h4>🧬 Complete Elements — Intact LTR-Retrotransposon Detection</h4>
+                <p><strong>Purpose:</strong> Identify and classify structurally complete LTR-retrotransposons with full LTR-internal-LTR architecture.</p>
+                <p style="margin-top: 8px;"><strong>Models available:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li><strong>Inpactor2</strong> — LTR_FINDER + Deep Neural Networks
+                        <ul style="margin-left: 16px; font-size: 0.9em;">
+                            <li><strong>Classification:</strong> Copia (12 lineages) and Gypsy (7 lineages)</li>
+                            <li><strong>Structural filters:</strong> TG-CA boundaries, TSDs, curated mode</li>
+                            <li><strong>Size range:</strong> 4-15 kb typical (requires both LTRs)</li>
+                        </ul>
+                    </li>
+                    <li><strong>YORO</strong> — Domain-based classification for complete elements</li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Best for:</strong> Genome assemblies, intact elements, complete structural annotation</p>
+            </div>
+
+            <div class="endpoint">
+                <h4>🏷️ Map Labels — Taxonomy Standardization</h4>
+                <p><strong>Purpose:</strong> Standardize FASTA headers to hierarchical TE taxonomy codes.</p>
+                <p style="margin-top: 8px;"><strong>Features:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li>Validates headers against hierarchical taxonomy tree</li>
+                    <li>Generates unified codes (Class I/LTR/Copia)</li>
+                    <li>Adds Actual_Label/Actual_Code to predictions CSV</li>
+                    <li><code>validateOnly</code> mode for diagnostics without file output</li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Best for:</strong> Dataset preparation, cross-tool compatibility, label validation</p>
+            </div>
+
+            <div class="endpoint">
+                <h4>📊 Evaluate — Performance Metrics</h4>
+                <p><strong>Purpose:</strong> Compute comprehensive classification performance metrics with multi-level hierarchical evaluation.</p>
+                <p style="margin-top: 8px;"><strong>Metrics generated:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li><strong>Overall:</strong> Accuracy, Precision, Recall, F1-Score, Specificity</li>
+                    <li><strong>Advanced:</strong> Cohen's Kappa, MCC, Youden's J, Balanced Accuracy</li>
+                    <li><strong>Hierarchical:</strong> Class → Order → Superfamily evaluation</li>
+                    <li><strong>Per-class:</strong> Individual metrics for each TE category</li>
+                    <li><strong>Confusion matrices:</strong> Prediction pattern visualization</li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Output formats:</strong> <code>detailed</code>, <code>summary</code>, <code>json</code></p>
+            </div>
+
+            <div class="endpoint">
+                <h4>📊 Visualize Metrics — Interactive Charts</h4>
+                <p><strong>Purpose:</strong> Create interactive visualizations from evaluation reports.</p>
+                <p style="margin-top: 8px;"><strong>Visualizations:</strong></p>
+                <ul style="margin-top: 4px; color: #666;">
+                    <li>Overall Performance (bar chart)</li>
+                    <li>Advanced Metrics (radar chart)</li>
+                    <li>Hierarchical Metrics (line chart)</li>
+                    <li>Per-Class Performance (detailed table + chart)</li>
+                </ul>
+                <p style="margin-top: 8px;"><strong>Supports:</strong> <code>evaluation_report.txt</code> and <code>metrics_summary.json</code> files</p>
             </div>
 
             <div class="notes">
-                <h4>Notes</h4>
-                <ol>
-                    <li>When using notifications the API attempts to email result links and attachments; outputs are removed from server
-                </ol>
+                <h4>⚠️ Important Information</h4>
+                <div style="background: rgba(126, 231, 184, 0.1); border-left: 4px solid var(--accent); padding: 16px; margin-top: 12px; border-radius: 4px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--accent); font-size: 15px;">🔄 Asynchronous Processing</h5>
+                    <p style="margin: 0; line-height: 1.6;">All classification and evaluation jobs are processed asynchronously. The API returns immediately with a <strong>job ID</strong> - you don't need to wait for processing to complete. Check your email for results.</p>
+                </div>
+
+                <div style="background: rgba(126, 231, 184, 0.1); border-left: 4px solid var(--accent-2); padding: 16px; margin-top: 12px; border-radius: 4px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--accent-2); font-size: 15px;">📧 Email Notifications</h5>
+                    <p style="margin: 0; line-height: 1.6;">Results are automatically sent to your notification email when jobs complete. Includes result links and file attachments. <strong>Important:</strong> Output files are removed from the server after email delivery for security and storage optimization.</p>
+                </div>
+
+                <div style="background: rgba(126, 231, 184, 0.1); border-left: 4px solid var(--accent); padding: 16px; margin-top: 12px; border-radius: 4px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--accent); font-size: 15px;">📁 Auto-Generated Outputs</h5>
+                    <p style="margin: 0; line-height: 1.6;">Output directories are created automatically with timestamps if not specified. The server handles all file organization - you only need to provide input files.</p>
+                </div>
+
+                <div style="background: rgba(126, 231, 184, 0.1); border-left: 4px solid var(--accent-2); padding: 16px; margin-top: 12px; border-radius: 4px;">
+                    <h5 style="margin: 0 0 12px 0; color: var(--accent-2); font-size: 15px;">⚙️ Server Defaults</h5>
+                    <p style="margin: 0; line-height: 1.6;">The following parameters are automatically enforced for optimal results:</p>
+                    <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+                        <li><code>clean=true</code> — Removes temporary files after processing</li>
+                        <li><code>verbose=true</code> — Provides detailed logging output</li>
+                        <li><code>autoLabel=true</code> — Automatically labels sequences for classification</li>
+                    </ul>
+                </div>
+
+                <div style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107; padding: 16px; margin-top: 12px; border-radius: 4px;">
+                    <h5 style="margin: 0 0 12px 0; color: #ffc107; font-size: 15px;">💡 Pro Tip</h5>
+                    <p style="margin: 0; line-height: 1.6;">For best results: <strong>Fragments</strong> for broken sequences, <strong>Domains</strong> for protein analysis, <strong>Complete Elements</strong> for intact LTR-RTs. Use <strong>Map Labels</strong> before evaluation to ensure proper taxonomy mapping.</p>
+                </div>
             </div>
                 </section>
                 </div>

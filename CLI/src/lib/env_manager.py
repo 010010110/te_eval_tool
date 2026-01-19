@@ -14,7 +14,13 @@ class EnvironmentManager:
         self.model_configs = {
             "classifyte": {
                 "env_name": "classifyte_env",
-                "requirements": ["networkx", "numpy<2.0", "pandas", "scikit-learn", "scipy"],
+                "requirements": [
+                    "numpy==1.19.5",
+                    "scipy==1.5.4", 
+                    "pandas==1.1.5",
+                    "scikit-learn==0.24.2",
+                    "networkx==2.4"
+                ],
                 "python_version": "3.9"
             },
             "terl": {

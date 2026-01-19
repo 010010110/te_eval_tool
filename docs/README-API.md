@@ -1,5 +1,7 @@
 # TE Evaluation Tool — API Reference (README-API.md)
 
+**Versão:** 5.0.1 | **Data:** Janeiro 2026
+
 This file documents the project's HTTP API which provides asynchronous endpoints for running model jobs, mapping FASTA headers, and computing evaluation metrics.
 
 This document is derived from two authoritative sources in the repository:
@@ -56,19 +58,31 @@ Important behaviour enforced by the controller:
 - `autoLabel` is forced true — the CLI will attempt automatic mapping back to FASTA headers to produce `Actual_Label`.
 
 Common request body fields (swagger + controller usage):
-- `model` — `classifyte`, `terl`, or `yoro` (default `classifyte`)
+- `model` — `classifyte`, `terl`, `yoro`, or `inpactor2` (default `classifyte`)
 - `modelFile` — runner-specific model pointer (e.g. ClassifyTE_combined.pkl, DS3, or YORO HDF5 path)
+  - Note: Not used for `inpactor2` (uses built-in models)
 - YORO-specific options: `window`, `threads`, `threshold`, `cycles`
+- Inpactor2-specific options: `threads`, `detectThreshold`, `filterThreshold`
 - `output` — optional: directory path for outputs; if omitted the server will create `run_<timestamp>` under the configured base results dir
 - `skipEvaluation` (boolean), `nodeFile`, `algorithm` (classifyte) — general options
 
 Example curl (run with minimal fields):
 
 ```bash
+# ClassifyTE
 curl -X POST "http://localhost:3002/api/v1/run" \
   -F "notificationEmail=user@example.com" \
   -F "fastaFile=@example.fasta" \
   -F "model=classifyte"
+
+# Inpactor2 (for complete LTR retrotransposons)
+curl -X POST "http://localhost:3002/api/v1/run" \
+  -F "notificationEmail=user@example.com" \
+  -F "fastaFile=@genome.fasta" \
+  -F "model=inpactor2" \
+  -F "threads=8" \
+  -F "detectThreshold=0.5" \
+  -F "filterThreshold=0.5"
 ```
 
 Server response (on success):
@@ -80,6 +94,8 @@ Server response (on success):
 Notes and gotchas:
 - Although the OpenAPI spec sets `autoLabel: false` by default, the controller forces it on for `/run` requests — resulting outputs will attempt label mapping.
 - The server forcibly sets `clean:true` and `verbose:true` for jobs queued through the API — this differs from CLI behaviour where `clean` and `verbose` are optional.
+- For **Inpactor2**: The model requires whole genomes or large sequences (NOT short fragments). Minimum sequence length requirements apply for meaningful LTR detection.
+- The `algorithm` parameter is **ignored** for TERL and Inpactor2 runs (not applicable to these models).
 
 ---
 

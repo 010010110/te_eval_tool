@@ -41,9 +41,9 @@ yoro_results/
 
 
 # # Arquivos temporários gerais (existentes no seu gitignore)
-# temp*
-# test*/*
-# test*.*
+temp*
+test*/*
+test*.*
 
 # --------------------
 # 4. Artefatos Específicos do Modelo TERL

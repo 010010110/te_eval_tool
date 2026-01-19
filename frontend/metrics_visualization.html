@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TE Eval Tool — Metrics Visualization</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .visualization-container {
+            padding: 20px;
+        }
+
+        .upload-section {
+            background: rgba(126, 231, 184, 0.1);
+            border: 2px dashed var(--accent);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            background: rgba(126, 231, 184, 0.15);
+            border-color: var(--accent-2);
+        }
+
+        .upload-section.dragover {
+            background: rgba(126, 231, 184, 0.25);
+            border-color: var(--accent);
+            transform: scale(1.02);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #02121a;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(126, 231, 184, 0.3);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(126, 231, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(126, 231, 184, 0.2);
+        }
+
+        .metric-title {
+            font-size: 13px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(126, 231, 184, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            height: 400px;
+            margin: 0 auto;
+        }
+
+        .summary-section {
+            background: rgba(126, 231, 184, 0.05);
+            border: 1px solid rgba(126, 231, 184, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .summary-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(126, 231, 184, 0.1);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .summary-value {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .no-data svg {
+            width: 120px;
+            height: 120px;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            color: #ff5252;
+            margin: 20px 0;
+        }
+
+        .success-message {
+            background: rgba(126, 231, 184, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--accent);
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(126, 231, 184, 0.1);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .per-class-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .per-class-table th,
+        .per-class-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(126, 231, 184, 0.1);
+        }
+
+        .per-class-table th {
+            background: rgba(126, 231, 184, 0.1);
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .per-class-table td {
+            color: var(--text-primary);
+        }
+
+        .per-class-table tr:hover {
+            background: rgba(126, 231, 184, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-topbar">
+        <div class="app-brand">
+            <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#02121a;font-weight:700">TE</div>
+            <div>
+                <h1>TE Eval Tool — Metrics Visualization</h1>
+                <div class="muted" style="font-size:12px">Visualize and analyze evaluation metrics</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+            <a href="index.html" style="color:var(--accent);text-decoration:none;font-size:14px">← Back to Main</a>
+        </div>
+    </div>
+    <div class="bg-scanline" aria-hidden="true"></div>
+
+    <main>
+        <div class="visualization-container">
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <h2>📊 Upload Evaluation Report</h2>
+                <p class="muted" style="margin: 15px 0">
+                    Upload an <code>evaluation_report.txt</code> or <code>metrics_summary.json</code> file to visualize the metrics
+                </p>
+                <div class="file-input-wrapper">
+                    <button class="upload-btn">Choose File or Drag & Drop</button>
+                    <input type="file" id="fileInput" accept=".txt,.json" />
+                </div>
+                <div id="fileName" style="margin-top: 15px; color: var(--accent); font-weight: 500;"></div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messageContainer"></div>
+
+            <!-- Loading -->
+            <div id="loadingIndicator" style="display: none;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p class="muted" style="margin-top: 15px">Processing file...</p>
+                </div>
+            </div>
+
+            <!-- No Data State -->
+            <div id="noDataState" class="no-data">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <h3>No Data to Display</h3>
+                <p>Upload an evaluation report to visualize the metrics</p>
+            </div>
+
+            <!-- Metrics Content -->
+            <div id="metricsContent" style="display: none;">
+                <!-- Summary Section -->
+                <div class="summary-section">
+                    <div class="summary-title">📋 Summary</div>
+                    <div id="summaryContent"></div>
+                </div>
+
+                <!-- Main Metrics Cards -->
+                <div class="metrics-grid" id="mainMetrics"></div>
+
+                <!-- Charts -->
+                <div class="chart-container">
+                    <div class="chart-title">🎯 Overall Performance Metrics</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="overallMetricsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📊 Advanced & Robust Metrics</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="advancedMetricsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">🌳 Hierarchical Metrics</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="hierarchicalMetricsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📊 Precision, Recall & F1-Score Breakdown</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="metricBreakdownChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="confusionMatrixSection" style="display: none;">
+                    <div class="chart-title">🔥 Confusion Matrix Heatmap</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="confusionMatrixChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="matchStatsSection" style="display: none;">
+                    <div class="chart-title">🎯 Match Statistics</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="matchStatsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="supportDistSection" style="display: none;">
+                    <div class="chart-title">📈 Class Support Distribution</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="supportDistChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Per-Class Metrics -->
+                <div class="chart-container" id="perClassSection" style="display: none;">
+                    <div class="chart-title">📈 Per-Class Performance</div>
+                    <div id="perClassContent"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentData = null;
+        let charts = {};
+
+        // Drag & Drop handlers
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function handleFileUpload(file) {
+            document.getElementById('fileName').textContent = `Selected: ${file.name}`;
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('noDataState').style.display = 'none';
+            document.getElementById('metricsContent').style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    let data;
+
+                    if (file.name.endsWith('.json')) {
+                        data = JSON.parse(content);
+                    } else {
+                        // Parse TXT file
+                        data = parseTxtReport(content);
+                    }
+
+                    currentData = data;
+                    renderMetrics(data);
+                    showMessage('File loaded successfully!', 'success');
+                } catch (error) {
+                    console.error('Error parsing file:', error);
+                    showMessage('Error parsing file. Please check the file format.');
+                    document.getElementById('noDataState').style.display = 'block';
+                } finally {
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                }
+            };
+
+            reader.onerror = () => {
+                showMessage('Error reading file');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('noDataState').style.display = 'block';
+            };
+
+            reader.readAsText(file);
+        }
+
+        function parseTxtReport(content) {
+            const data = {
+                per_class_metrics: []
+            };
+
+            // Tentar extrair JSON do final do arquivo (novo formato)
+            const jsonSummaryMatch = content.match(/RESUMO \(metrics_summary\.json\)\s*-{40}\s*(\{[\s\S]*?\})\s*DETALHADO/);
+            const jsonDetailedMatch = content.match(/DETALHADO \(detailed_metrics\.json\)\s*-{40}\s*(\{[\s\S]*?\})\s*$/);
+            
+            if (jsonSummaryMatch && jsonDetailedMatch) {
+                try {
+                    const summary = JSON.parse(jsonSummaryMatch[1]);
+                    const detailed = JSON.parse(jsonDetailedMatch[1]);
+                    
+                    console.log('✅ Parsed JSON from TXT file');
+                    console.log('Summary keys:', Object.keys(summary));
+                    console.log('Detailed keys:', Object.keys(detailed));
+                    
+                    Object.assign(data, detailed);
+                    
+                    Object.keys(summary).forEach(key => {
+                        if (!(key in detailed)) {
+                            data[key] = summary[key];
+                        }
+                    });
+                    
+                    console.log('✅ Merged data - precision_micro:', data.precision_micro, 'precision_weighted:', data.precision_weighted);
+                    
+                    if (detailed.confusion_matrix) {
+                        data.confusion_matrix = detailed.confusion_matrix;
+                    }
+                    if (detailed.match_statistics) {
+                        data.match_statistics = detailed.match_statistics;
+                    }
+                    if (detailed.per_class_metrics) {
+                        data.per_class_metrics = Object.entries(detailed.per_class_metrics)
+                            .filter(([className]) => !['accuracy', 'macro avg', 'weighted avg', 'micro avg'].includes(className))
+                            .map(([className, metrics]) => ({
+                                class: className,
+                                precision: metrics.precision,
+                                recall: metrics.recall,
+                                f1: metrics['f1-score'],
+                                support: metrics.support
+                            }));
+                    }
+                    if (detailed.mean_hierarchical_distance !== undefined) {
+                        data.hierarchical_distance_avg = detailed.mean_hierarchical_distance;
+                    }
+                    if (detailed.max_hierarchical_distance !== undefined) {
+                        data.hierarchical_distance_max = detailed.max_hierarchical_distance;
+                    }
+                    if (detailed.hierarchical_precision !== undefined) {
+                        data.hierarchical_precision = detailed.hierarchical_precision;
+                    }
+                    if (detailed.hierarchical_recall !== undefined) {
+                        data.hierarchical_recall = detailed.hierarchical_recall;
+                    }
+                    if (detailed.auroc_macro !== undefined && detailed.auroc_macro !== 'not_available') {
+                        data.auroc_macro = detailed.auroc_macro;
+                    }
+                    if (detailed.map_macro !== undefined && detailed.map_macro !== 'not_available') {
+                        data.map_macro = detailed.map_macro;
+                    }
+                    
+                    return data;
+                } catch (e) {
+                    console.warn('Erro ao parsear JSON embutido, tentando parse de texto:', e);
+                }
+            }
+
+            // Fallback: Parse de texto (formato antigo)
+            const lines = content.split('\n');
+            let currentSection = '';
+
+            console.log('Parsing TXT file - total lines:', lines.length);
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (line.includes('RESUMO EXECUTIVO')) {
+                    currentSection = 'summary';
+                } else if (line.includes('MÉTRICAS PADRÃO')) {
+                    currentSection = 'standard';
+                    console.log('Found MÉTRICAS PADRÃO section at line', i);
+                } else if (line.includes('MÉTRICAS ROBUSTAS E AVANÇADAS')) {
+                    currentSection = 'advanced';
+                } else if (line.includes('MÉTRICAS HIERÁRQUICAS')) {
+                    currentSection = 'hierarchical';
+                } else if (line.includes('MÉTRICAS POR CLASSE')) {
+                    currentSection = 'per_class';
+                } else if (line.startsWith('Classe:')) {
+                    const className = line.replace('Classe:', '').trim();
+                    
+                    // Skip aggregate classes and invalid entries
+                    const skipClasses = ['accuracy', 'macro avg', 'weighted avg', 'micro avg'];
+                    if (skipClasses.includes(className)) {
+                        continue;
+                    }
+                    
+                    // Skip very short class names (likely fragments) unless they are numeric codes
+                    if (className.length <= 2 && !/^[0-9.]+$/.test(className)) {
+                        continue;
+                    }
+                    
+                    const classMetrics = { class: className };
+                    
+                    // Read next lines for metrics
+                    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+                        const metricLine = lines[j].trim();
+                        if (metricLine.startsWith('Precisão:')) {
+                            classMetrics.precision = parseFloat(metricLine.split(':')[1]);
+                        } else if (metricLine.startsWith('Recall:')) {
+                            classMetrics.recall = parseFloat(metricLine.split(':')[1]);
+                        } else if (metricLine.startsWith('F1-Score:')) {
+                            classMetrics.f1 = parseFloat(metricLine.split(':')[1]);
+                        } else if (metricLine.startsWith('Suporte:')) {
+                            classMetrics.support = parseFloat(metricLine.split(':')[1]);
+                        }
+                    }
+                    data.per_class_metrics.push(classMetrics);
+                }
+
+                // Parse metrics
+                if (line.includes(':') && !line.includes('─') && !line.includes('=')) {
+                    const parts = line.split(':');
+                    if (parts.length === 2) {
+                        const key = parts[0].trim().toLowerCase();
+                        const value = parts[1].trim();
+                        const numValue = parseFloat(value);
+
+                        // Debug para métricas padrão
+                        if (currentSection === 'standard' && !isNaN(numValue)) {
+                            console.log('Standard metric found:', key, '=', numValue);
+                        }
+
+                        if (!isNaN(numValue)) {
+                            if (key.includes('total') && key.includes('sequências')) {
+                                data.total_samples = numValue;
+                            } else if (key.includes('número') && key.includes('classes')) {
+                                data.num_classes = numValue;
+                            } else if (key.includes('acurácia geral')) {
+                                data.accuracy = numValue;
+                            } else if (key === 'acurácia' && !key.includes('geral')) {
+                                if (!data.accuracy) data.accuracy = numValue;
+                            } else if (key === 'precisão (macro)') {
+                                data.precision_macro = numValue;
+                                console.log('✅ Set precision_macro:', numValue);
+                            } else if (key === 'precisão (micro)') {
+                                data.precision_micro = numValue;
+                                console.log('✅ Set precision_micro:', numValue);
+                            } else if (key === 'precisão (weighted)') {
+                                data.precision_weighted = numValue;
+                                console.log('✅ Set precision_weighted:', numValue);
+                            } else if (key === 'recall (macro)') {
+                                data.recall_macro = numValue;
+                                console.log('✅ Set recall_macro:', numValue);
+                            } else if (key === 'recall (micro)') {
+                                data.recall_micro = numValue;
+                                console.log('✅ Set recall_micro:', numValue);
+                            } else if (key === 'recall (weighted)') {
+                                data.recall_weighted = numValue;
+                                console.log('✅ Set recall_weighted:', numValue);
+                            } else if (key === 'f1-score (macro)') {
+                                data.f1_macro = numValue;
+                                console.log('✅ Set f1_macro:', numValue);
+                            } else if (key === 'f1-score (micro)') {
+                                data.f1_micro = numValue;
+                                console.log('✅ Set f1_micro:', numValue);
+                            } else if (key === 'f1-score (weighted)') {
+                                data.f1_weighted = numValue;
+                                console.log('✅ Set f1_weighted:', numValue);
+                            } else if (key.includes('especificidade')) {
+                                data.specificity_macro = numValue;
+                            } else if (key.includes('kappa')) {
+                                data.cohens_kappa = numValue;
+                            } else if (key.includes('matthews') || key.includes('mcc')) {
+                                data.matthews_corrcoef = numValue;
+                            } else if (key.includes('youden')) {
+                                data.youdens_j = numValue;
+                            } else if (key.includes('auroc')) {
+                                data.auroc_macro = numValue;
+                            } else if (key.includes('map')) {
+                                data.map_macro = numValue;
+                            } else if (key.includes('precisão hierárquica')) {
+                                data.hierarchical_precision = numValue;
+                            } else if (key.includes('recall hierárquico')) {
+                                data.hierarchical_recall = numValue;
+                            } else if (key.includes('f1-score hierárquico')) {
+                                data.hierarchical_f1 = numValue;
+                            } else if (key.includes('distância') && key.includes('média')) {
+                                data.hierarchical_distance_avg = numValue;
+                            } else if (key.includes('distância') && key.includes('máxima')) {
+                                data.hierarchical_distance_max = numValue;
+                            } else if (key.includes('desvio') && key.includes('f1')) {
+                                data.std_f1_per_class = numValue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        function renderMetrics(data) {
+            document.getElementById('metricsContent').style.display = 'block';
+            document.getElementById('noDataState').style.display = 'none';
+
+            // Render Summary
+            renderSummary(data);
+
+            // Render Main Metrics Cards
+            renderMainMetrics(data);
+
+            // Render Charts
+            renderOverallMetricsChart(data);
+            renderAdvancedMetricsChart(data);
+            renderHierarchicalMetricsChart(data);
+            renderMetricBreakdownChart(data);
+
+            // Render optional charts
+            if (data.confusion_matrix) {
+                renderConfusionMatrix(data);
+            }
+            
+            if (data.match_statistics) {
+                renderMatchStatistics(data);
+            }
+
+            // Render Per-Class Metrics
+            if (data.per_class_metrics && data.per_class_metrics.length > 0) {
+                renderPerClassMetrics(data);
+                renderSupportDistribution(data);
+            }
+        }
+
+        function renderSummary(data) {
+            const summaryContent = document.getElementById('summaryContent');
+            summaryContent.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-label">Total Samples</span>
+                    <span class="summary-value">${data.total_samples || 'N/A'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Number of Classes</span>
+                    <span class="summary-value">${data.num_classes || 'N/A'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Overall Accuracy</span>
+                    <span class="summary-value">${formatPercent(data.accuracy)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">F1-Score (Macro)</span>
+                    <span class="summary-value">${formatPercent(data.f1_macro)}</span>
+                </div>
+            `;
+        }
+
+        function renderMainMetrics(data) {
+            const mainMetrics = document.getElementById('mainMetrics');
+            const metrics = [
+                { title: 'Accuracy', value: data.accuracy, subtitle: 'Overall performance' },
+                { title: 'Precision (Macro)', value: data.precision_macro, subtitle: 'Average precision' },
+                { title: 'Recall (Macro)', value: data.recall_macro, subtitle: 'Average recall' },
+                { title: 'F1-Score (Macro)', value: data.f1_macro, subtitle: 'Harmonic mean' },
+                { title: 'Specificity', value: data.specificity_macro, subtitle: 'True negative rate' },
+                { title: 'Cohen\'s Kappa', value: data.cohens_kappa, subtitle: 'Agreement measure' },
+                { title: 'Matthews Corr.', value: data.matthews_corrcoef, subtitle: 'MCC coefficient' },
+                { title: 'Hierarchical F1', value: data.hierarchical_f1, subtitle: 'Tree-based score' }
+            ];
+
+            mainMetrics.innerHTML = metrics.map(m => `
+                <div class="metric-card">
+                    <div class="metric-title">${m.title}</div>
+                    <div class="metric-value">${formatPercent(m.value)}</div>
+                    <div class="metric-subtitle">${m.subtitle}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderOverallMetricsChart(data) {
+            const ctx = document.getElementById('overallMetricsChart').getContext('2d');
+            
+            if (charts.overall) {
+                charts.overall.destroy();
+            }
+
+            charts.overall = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Specificity'],
+                    datasets: [{
+                        label: 'Performance Metrics',
+                        data: [
+                            data.accuracy || 0,
+                            data.precision_macro || 0,
+                            data.recall_macro || 0,
+                            data.f1_macro || 0,
+                            data.specificity_macro || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(126, 231, 184, 0.7)',
+                            'rgba(110, 200, 241, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(126, 231, 184, 1)',
+                            'rgba(110, 200, 241, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${formatPercent(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                color: 'rgba(126, 231, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAdvancedMetricsChart(data) {
+            const ctx = document.getElementById('advancedMetricsChart').getContext('2d');
+            
+            if (charts.advanced) {
+                charts.advanced.destroy();
+            }
+
+            charts.advanced = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Cohen\'s Kappa', 'Matthews Corr.', 'Youden\'s J', 'F1 Consistency'],
+                    datasets: [{
+                        label: 'Advanced Metrics',
+                        data: [
+                            data.cohens_kappa || 0,
+                            data.matthews_corrcoef || 0,
+                            data.youdens_j || 0,
+                            (1 - (data.std_f1_per_class || 0)) // Invert for better visualization
+                        ],
+                        backgroundColor: 'rgba(126, 231, 184, 0.2)',
+                        borderColor: 'rgba(126, 231, 184, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(126, 231, 184, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(126, 231, 184, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                color: '#7EE7B8',
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: 'rgba(126, 231, 184, 0.2)'
+                            },
+                            angleLines: {
+                                color: 'rgba(126, 231, 184, 0.2)'
+                            },
+                            pointLabels: {
+                                color: '#7EE7B8',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderHierarchicalMetricsChart(data) {
+            const ctx = document.getElementById('hierarchicalMetricsChart').getContext('2d');
+            
+            if (charts.hierarchical) {
+                charts.hierarchical.destroy();
+            }
+
+            const hasHierarchical = data.hierarchical_precision !== undefined;
+
+            charts.hierarchical = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Precision', 'Recall', 'F1-Score'],
+                    datasets: [
+                        {
+                            label: 'Standard Metrics',
+                            data: [
+                                data.precision_macro || 0,
+                                data.recall_macro || 0,
+                                data.f1_macro || 0
+                            ],
+                            borderColor: 'rgba(110, 200, 241, 1)',
+                            backgroundColor: 'rgba(110, 200, 241, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        ...(hasHierarchical ? [{
+                            label: 'Hierarchical Metrics',
+                            data: [
+                                data.hierarchical_precision || 0,
+                                data.hierarchical_recall || 0,
+                                data.hierarchical_f1 || 0
+                            ],
+                            borderColor: 'rgba(126, 231, 184, 1)',
+                            backgroundColor: 'rgba(126, 231, 184, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }] : [])
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#7EE7B8',
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatPercent(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                color: 'rgba(126, 231, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderPerClassMetrics(data) {
+            const section = document.getElementById('perClassSection');
+            const content = document.getElementById('perClassContent');
+            
+            // Filter out aggregate and invalid classes
+            const skipClasses = ['accuracy', 'macro avg', 'weighted avg', 'micro avg'];
+            const validMetrics = data.per_class_metrics.filter(metric => {
+                const className = metric.class || '';
+                // Skip aggregate classes
+                if (skipClasses.includes(className)) return false;
+                // Skip very short names unless they are numeric codes
+                if (className.length <= 2 && !/^[0-9.]+$/.test(className)) return false;
+                return true;
+            });
+            
+            // If no valid metrics, don't show the section
+            if (validMetrics.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+
+            // Create table
+            let tableHTML = `
+                <table class="per-class-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>Support</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            validMetrics.forEach(metric => {
+                const className = getClassDisplayName(metric.class);
+                tableHTML += `
+                    <tr>
+                        <td><strong>${className}</strong></td>
+                        <td>${formatPercent(metric.precision)}</td>
+                        <td>${formatPercent(metric.recall)}</td>
+                        <td>${formatPercent(metric.f1)}</td>
+                        <td>${metric.support !== undefined ? metric.support.toFixed(0) : 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            content.innerHTML = tableHTML;
+            
+            // Update validMetrics reference for chart
+            data.per_class_metrics = validMetrics;
+
+            // Create bar chart for per-class F1 scores
+            const canvasId = 'perClassChart';
+            content.innerHTML += `
+                <div style="margin-top: 30px;">
+                    <h4 style="color: var(--accent); margin-bottom: 15px;">F1-Score by Class</h4>
+                    <div class="canvas-wrapper">
+                        <canvas id="${canvasId}"></canvas>
+                    </div>
+                </div>
+            `;
+
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            if (charts.perClass) {
+                charts.perClass.destroy();
+            }
+
+            charts.perClass = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.per_class_metrics.map(m => getClassDisplayName(m.class)),
+                    datasets: [{
+                        label: 'F1-Score',
+                        data: data.per_class_metrics.map(m => m.f1 || 0),
+                        backgroundColor: 'rgba(126, 231, 184, 0.7)',
+                        borderColor: 'rgba(126, 231, 184, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `F1-Score: ${formatPercent(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                color: 'rgba(126, 231, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMetricBreakdownChart(data) {
+            const ctx = document.getElementById('metricBreakdownChart').getContext('2d');
+            
+            // Debug: verificar os dados
+            console.log('Metric Breakdown Data:', {
+                precision_macro: data.precision_macro,
+                precision_micro: data.precision_micro,
+                precision_weighted: data.precision_weighted,
+                recall_macro: data.recall_macro,
+                recall_micro: data.recall_micro,
+                recall_weighted: data.recall_weighted,
+                f1_macro: data.f1_macro,
+                f1_micro: data.f1_micro,
+                f1_weighted: data.f1_weighted
+            });
+            
+            if (charts.breakdown) {
+                charts.breakdown.destroy();
+            }
+
+            charts.breakdown = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Macro', 'Micro', 'Weighted'],
+                    datasets: [
+                        {
+                            label: 'Precision',
+                            data: [
+                                data.precision_macro || 0,
+                                data.precision_micro || 0,
+                                data.precision_weighted || 0
+                            ],
+                            backgroundColor: 'rgba(126, 231, 184, 0.7)',
+                            borderColor: 'rgba(126, 231, 184, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Recall',
+                            data: [
+                                data.recall_macro || 0,
+                                data.recall_micro || 0,
+                                data.recall_weighted || 0
+                            ],
+                            backgroundColor: 'rgba(110, 200, 241, 0.7)',
+                            borderColor: 'rgba(110, 200, 241, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'F1-Score',
+                            data: [
+                                data.f1_macro || 0,
+                                data.f1_micro || 0,
+                                data.f1_weighted || 0
+                            ],
+                            backgroundColor: 'rgba(192, 132, 255, 0.7)',
+                            borderColor: 'rgba(192, 132, 255, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#7EE7B8',
+                                font: { size: 13 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatPercent(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                color: 'rgba(126, 231, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#7EE7B8'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderConfusionMatrix(data) {
+            const section = document.getElementById('confusionMatrixSection');
+            const ctx = document.getElementById('confusionMatrixChart').getContext('2d');
+            
+            if (!data.confusion_matrix || data.confusion_matrix.length === 0) {
+                return;
+            }
+            
+            section.style.display = 'block';
+            
+            if (charts.confusionMatrix) {
+                charts.confusionMatrix.destroy();
+            }
+
+            // Get class labels (prefer names over codes)
+            const labels = data.confusion_matrix_names || data.confusion_matrix_labels || 
+                          Array.from({length: data.confusion_matrix.length}, (_, i) => `Class ${i}`);
+
+            // Flatten confusion matrix for heatmap visualization
+            const matrix = data.confusion_matrix;
+            const size = matrix.length;
+            const flatData = [];
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    flatData.push({
+                        x: j,
+                        y: i,
+                        v: matrix[i][j],
+                        trueLabel: labels[i],
+                        predLabel: labels[j]
+                    });
+                }
+            }
+
+            // Simple heatmap using scatter plot
+            charts.confusionMatrix = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Confusion Matrix',
+                        data: flatData.map(d => ({x: d.x, y: d.y})),
+                        backgroundColor: flatData.map(d => {
+                            const max = Math.max(...matrix.flat());
+                            const intensity = max > 0 ? d.v / max : 0;
+                            return `rgba(126, 231, 184, ${intensity})`;
+                        }),
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = flatData[context.dataIndex];
+                                    return [
+                                        `True: ${point.trueLabel}`,
+                                        `Predicted: ${point.predLabel}`,
+                                        `Count: ${point.v}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Predicted Class',
+                                color: '#7EE7B8'
+                            },
+                            ticks: { 
+                                color: '#7EE7B8',
+                                callback: function(value) {
+                                    return labels[value] || value;
+                                }
+                            },
+                            grid: { color: 'rgba(126, 231, 184, 0.1)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: 'True Class',
+                                color: '#7EE7B8'
+                            },
+                            ticks: { 
+                                color: '#7EE7B8',
+                                callback: function(value) {
+                                    return labels[value] || value;
+                                }
+                            },
+                            grid: { color: 'rgba(126, 231, 184, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMatchStatistics(data) {
+            const section = document.getElementById('matchStatsSection');
+            const ctx = document.getElementById('matchStatsChart').getContext('2d');
+            
+            if (!data.match_statistics) {
+                return;
+            }
+            
+            section.style.display = 'block';
+            
+            if (charts.matchStats) {
+                charts.matchStats.destroy();
+            }
+
+            const stats = data.match_statistics;
+            const labels = Object.keys(stats).map(key => {
+                return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            });
+            const values = Object.values(stats);
+
+            charts.matchStats = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            'rgba(126, 231, 184, 0.8)',
+                            'rgba(110, 200, 241, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(126, 231, 184, 1)',
+                            'rgba(110, 200, 241, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                color: '#7EE7B8',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSupportDistribution(data) {
+            const section = document.getElementById('supportDistSection');
+            const ctx = document.getElementById('supportDistChart').getContext('2d');
+            
+            const validMetrics = data.per_class_metrics.filter(metric => {
+                const className = metric.class || '';
+                const skipClasses = ['accuracy', 'macro avg', 'weighted avg', 'micro avg'];
+                if (skipClasses.includes(className)) return false;
+                if (className.length <= 2 && !/^[0-9.]+$/.test(className)) return false;
+                return metric.support > 0;
+            });
+            
+            if (validMetrics.length === 0) {
+                return;
+            }
+            
+            section.style.display = 'block';
+            
+            if (charts.supportDist) {
+                charts.supportDist.destroy();
+            }
+
+            // Sort by support descending
+            validMetrics.sort((a, b) => b.support - a.support);
+            
+            // Take top 20 classes
+            const topClasses = validMetrics.slice(0, 20);
+
+            charts.supportDist = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topClasses.map(m => getClassDisplayName(m.class)),
+                    datasets: [{
+                        label: 'Support (# of samples)',
+                        data: topClasses.map(m => m.support || 0),
+                        backgroundColor: 'rgba(110, 200, 241, 0.7)',
+                        borderColor: 'rgba(110, 200, 241, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Support: ${context.parsed.x} samples`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { color: '#7EE7B8' },
+                            grid: { color: 'rgba(126, 231, 184, 0.1)' },
+                            title: {
+                                display: true,
+                                text: 'Number of Samples',
+                                color: '#7EE7B8'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#7EE7B8',
+                                font: { size: 10 }
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatPercent(value) {
+            if (value === undefined || value === null || isNaN(value)) {
+                return 'N/A';
+            }
+            return (value * 100).toFixed(2) + '%';
+        }
+
+        // Map class codes to readable names
+        function getClassDisplayName(classCode) {
+            // Hierarchy mapping from tree.txt
+            const classMap = {
+                '1': 'Class I',
+                '1.1': 'LTR',
+                '1.1.1': 'Copia',
+                '1.1.2': 'Bel-Pao',
+                '1.1.3': 'Retrovirus',
+                '1.1.4': 'Gypsy',
+                '1.1.5': 'ERV',
+                '1.2': 'SINE',
+                '1.2.1': '5S',
+                '1.2.2': '7SL',
+                '1.2.3': 'tRNA',
+                '1.3': 'LINE',
+                '1.3.1': 'I',
+                '1.3.2': 'Jockey',
+                '1.3.3': 'L1',
+                '1.3.4': 'RTE',
+                '1.3.5': 'R2',
+                '1.4': 'DIRS',
+                '1.4.1': 'DIRS',
+                '1.4.2': 'Ngaro',
+                '1.5': 'PLE',
+                '1.5.1': 'Penelope',
+                '1.6': 'TRIM',
+                '1.7': 'Other Class I',
+                '2': 'Class II',
+                '2.1': 'TIR',
+                '2.1.1': 'hAT',
+                '2.1.2': 'Tc1-Mariner',
+                '2.1.3': 'P',
+                '2.1.4': 'MuDR',
+                '2.1.5': 'CACTA',
+                '2.1.6': 'PIF-Harbinger',
+                '2.1.7': 'PiggyBac',
+                '2.1.8': 'Transib',
+                '2.1.9': 'Merlin',
+                '2.2': 'Crypton',
+                '2.2.1': 'Crypton',
+                '2.3': 'Helitron',
+                '2.3.1': 'Helitron',
+                '2.4': 'MITE',
+                '2.4.1': 'Unknown MITE',
+                '2.5': 'Other Class II',
+                '2.5.1': 'Academ',
+                '2.5.2': 'Kolobok',
+                '2.5.3': 'Ginger2/TDD',
+                '2.5.4': 'Ginger1',
+                '2.5.5': 'Chapaev',
+                '2.5.6': 'Unknown',
+                '2.6': 'Maverick',
+                '2.6.1': 'Maverick'
+            };
+
+            const codeStr = String(classCode);
+            
+            // If it's a code, try to map it
+            if (classMap[codeStr]) {
+                return `${codeStr} (${classMap[codeStr]})`;
+            }
+            
+            // If it's already a name or unknown, return as is
+            return codeStr;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('TE Eval Tool - Metrics Visualization Ready');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,5 +1,7 @@
 # TE Evaluation Tool — CLI Documentation
 
+**Versão:** 5.0.1 | **Data:** Janeiro 2026
+
 This README focuses on the CLI experience only (commands, models, options and examples).
 The API documentation will be provided in a separate section/file later — a placeholder for the API is kept below.
 
@@ -113,9 +115,10 @@ Each command accepts a set of model-specific options and general options (like `
 
 The CLI supports multiple model runners. Each runner is invoked by `--model <model-name>`.
 
-1) classifyte — ClassifyTE runner (stacking / hierarchical classifier)
-2) terl — TERL runner (CNN-based)
-3) yoro — YORO runner (deep-learning object detection pipeline for domains)
+1) **classifyte** — ClassifyTE runner (stacking / hierarchical classifier) for TE fragments
+2) **terl** — TERL runner (CNN-based) for TE fragments
+3) **yoro** — YORO runner (deep-learning object detection pipeline for domains)
+4) **inpactor2** — Inpactor2 runner (structural detection + classification for complete LTR retrotransposons)
 
 Below you find details and examples for each model.
 
@@ -235,6 +238,60 @@ What to expect:
 
 ---
 
+## Model: Inpactor2 (example)
+
+Purpose: structural detection and classification of complete LTR retrotransposons. Inpactor2 uses a multi-step pipeline combining LTR_FINDER (structural detection), k-mer feature extraction, and deep neural networks for filtering and classification.
+
+Important Inpactor2-specific options (run command):
+- --model inpactor2
+- --input <genome_fasta> — whole genome or large sequences (NOT short fragments)
+- --output <DIR> — directory for outputs
+- --threads <int> — number of processing threads (optional, default: all cores)
+- --detect-threshold <float> — detection confidence threshold (default: 0.5)
+- --filter-threshold <float> — filter/quality threshold (default: 0.5)
+- --auto-label — enable automatic mapping if FASTA headers contain classification info
+- --verbose / -v — detailed logging
+
+**Important Notes:**
+- Inpactor2 requires **whole genomes or large sequences**, NOT fragments (unlike ClassifyTE/TERL)
+- The pipeline runs LTR_FINDER first, then applies neural network models for detection, filtering and classification
+- Minimum sequence length requirements apply (typically >1000bp for meaningful LTR detection)
+- Requires TensorFlow 2.8+ environment (configured automatically via wrapper)
+
+Example:
+
+```bash
+cd CLI
+python3 src/main.py run \
+  --model inpactor2 \
+  --input ./data/genome.fasta \
+  --output /app/data/results/run_inpactor2_demo \
+  --threads 8 \
+  --detect-threshold 0.5 \
+  --filter-threshold 0.5 \
+  --auto-label -v
+```
+
+What to expect:
+- Inpactor2 creates working directory `inpactor2_temp/` in the output path
+- Structural detection results from LTR_FINDER
+- Filtered and classified LTR retrotransposons
+- Final results converted to `predicted_results.csv`
+- Optional evaluation if ground truth labels are available
+
+Pipeline stages:
+1. **Detection**: LTR_FINDER identifies candidate LTR structures
+2. **Feature Extraction**: K-mer features computed from candidates
+3. **Filtering**: Neural network removes low-quality/incomplete elements
+4. **Classification**: Neural network assigns LTR superfamily labels (Copia, Gypsy, Bel-Pao, etc.)
+
+**Common Issues:**
+- If LTR_FINDER fails: check that it's properly installed and in PATH
+- If no elements detected: input sequences may be too short or lack LTR retrotransposons
+- For headless environments: wrapper automatically handles matplotlib/tkinter import issues
+
+---
+
 ## Common options (summary)
 
 - `--input` — path to input FASTA (required)
@@ -250,10 +307,10 @@ Note: email notifications are available through the API only; the CLI does not i
 
 Flag | Type | Default | Applies to | Description
 ---|---:|:---:|:---:|---
-`--model` | string | `classifyte` | run | Choose runner: classifyte, terl, yoro
+`--model` | string | `classifyte` | run | Choose runner: classifyte, terl, yoro, inpactor2
 `--input` | path | — | all | Input FASTA or CSV (required)
 `--output` | path | auto under `data/results` | all | Output directory for run artifacts
-`--model-file` | path/string | per-run default | all | Path or reference to the chosen model (e.g., V25.hdf5 or DS3)
+`--model-file` | path/string | per-run default | classifyte, terl, yoro | Path or reference to the chosen model (e.g., V25.hdf5 or DS3)
 `--node-file` | file | `node.txt` | classifyte | Hierarchy nodes file used by classifiers
 `--algorithm` | choice | `lcpnb` | classifyte | Hierarchical algorithm (lcpnb|nllcpn)
 `--auto-label` | flag | false | all | Attempt automatic mapping from FASTA headers
@@ -262,15 +319,22 @@ Flag | Type | Default | Applies to | Description
 `--verbose` / `-v` | flag | false | all | Increase console output verbosity
 `--format` | choice | `fasta` | validate | Specify validation input format (fasta|csv)
 `--validate-only` | flag | false | map-labels | Run mapping checks without writing outputs
+`--threads` | int | all cores | yoro, inpactor2 | Number of threads for processing
 
 YORO-specific flags:
 
 Flag | Type | Default | Description
 ---|---:|:---:|---
 `--window` | int | 50000 | Detection window size (bases)
-`--threads` | int | all cores | Number of threads for detection
 `--threshold` | float | 0.8 | Detection confidence threshold
 `--cycles` | int | 1 | How many detection cycles to run
+
+Inpactor2-specific flags:
+
+Flag | Type | Default | Description
+---|---:|:---:|---
+`--detect-threshold` | float | 0.5 | Detection confidence threshold for LTR candidates
+`--filter-threshold` | float | 0.5 | Filtering threshold for quality control
 
 TERL-specific notes:
 - `--model-file` accepts either a DS reference (DS1..DS5) resolved under `CLI/src/models/TERL/Models` or an absolute model directory.
@@ -380,8 +444,11 @@ Top-level layout (per run):
 
 Notes for each file
 - predicted_results.csv
-  - CSV produced by runners in a common format: at least these columns: `Sequence ID`, `Predicted label`, `Final_Confidence_Score`.
-  - When `--auto-label` or map-labels are used, rows will include `Actual_Label` and `Actual_Code` columns.
+  - CSV produced by runners in a common format with the following columns:
+  - **Base columns**: `Sequence ID`, `Predicted label`, `Final_Confidence_Score`, `Predicted_Code`, `Predicted_Path_Codes`
+  - **Ground truth columns** (when `--auto-label` or map-labels are used): `Actual_Label`, `Actual_Code`
+  - **Matching columns** (hierarchical matching): `Match_Type`, `Match_Confidence`, `Match_Score`
+  - Match_Type indicates the type of hierarchical correspondence (exact_hierarchical, hierarchical_sibling, hierarchical_parent, etc.)
 
 - metrics_summary.json
   - Small JSON summarizing key metrics (accuracy, f1_macro, recall_macro, num_classes, total_samples).
@@ -481,8 +548,9 @@ ls -la /app/data/results/debug_yoro_repro
 ```
 
 Validation tips after any run
-- Verify `predicted_results.csv` exists and contains `Sequence ID`, `Predicted label`, `Final_Confidence_Score`.
-- If results include `Actual_Label` and `Actual_Code`, the evaluation will run automatically (unless `--skip-evaluation` was passed).
+- Verify `predicted_results.csv` exists and contains minimum required columns: `Sequence ID`, `Predicted label`, `Final_Confidence_Score`, `Predicted_Code`.
+- If results include ground truth columns (`Actual_Label` and `Actual_Code`), the evaluation will run automatically (unless `--skip-evaluation` was passed).
+- Check for matching columns (`Match_Type`, `Match_Confidence`, `Match_Score`) to understand hierarchical correspondence quality.
 - For YORO inspect `yoro_temp/output.tab` to ensure the detection pipeline produced rows (and check for header/format issues).
 
 ---
