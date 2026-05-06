@@ -131,12 +131,29 @@
             margin: 0 auto;
         }
 
+        .canvas-wrapper.heatmap {
+            height: 600px;
+        }
+
         .summary-section {
             background: rgba(126, 231, 184, 0.05);
             border: 1px solid rgba(126, 231, 184, 0.2);
             border-radius: 12px;
             padding: 25px;
+        }
+
+        .summary-heatmap-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
             margin-bottom: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) {
+            .summary-heatmap-container {
+                grid-template-columns: 1fr;
+            }
         }
 
         .summary-title {
@@ -247,6 +264,19 @@
         .per-class-table tr:hover {
             background: rgba(126, 231, 184, 0.05);
         }
+
+        .heatmap-subtitle {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+
+        #confusionMatrixChart {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
     </style>
 </head>
 
@@ -302,10 +332,35 @@
 
             <!-- Metrics Content -->
             <div id="metricsContent" style="display: none;">
-                <!-- Summary Section -->
-                <div class="summary-section">
-                    <div class="summary-title">📋 Summary</div>
-                    <div id="summaryContent"></div>
+                <!-- Info Panel for Hierarchical Matching -->
+                <div id="infoPanel" style="display: none; background: rgba(110, 200, 241, 0.1); border: 1px solid rgba(110, 200, 241, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: start; gap: 15px;">
+                        <div style="font-size: 32px;">ℹ️</div>
+                        <div style="flex: 1;">
+                            <h3 style="color: var(--accent); margin: 0 0 10px 0; font-size: 16px;">Hierarchical Matching Information</h3>
+                            <p id="infoPanelText" style="color: var(--text-primary); margin: 0; font-size: 14px; line-height: 1.6;"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary and Heatmap Side by Side -->
+                <div class="summary-heatmap-container">
+                    <!-- Summary Section -->
+                    <div class="summary-section">
+                        <div class="summary-title">📋 Summary</div>
+                        <div id="summaryContent"></div>
+                    </div>
+
+                    <!-- Confusion Matrix Heatmap -->
+                    <div class="chart-container" id="confusionMatrixSection" style="display: none; margin-bottom: 0;">
+                        <div class="chart-title">🔥 Confusion Matrix Heatmap</div>
+                        <div class="heatmap-subtitle">
+                            Green diagonal = correct predictions | Red off-diagonal = misclassifications | Hover for details
+                        </div>
+                        <div class="canvas-wrapper heatmap" style="height: 500px;">
+                            <canvas id="confusionMatrixChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Main Metrics Cards -->
@@ -337,13 +392,6 @@
                     <div class="chart-title">📊 Precision, Recall & F1-Score Breakdown</div>
                     <div class="canvas-wrapper">
                         <canvas id="metricBreakdownChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container" id="confusionMatrixSection" style="display: none;">
-                    <div class="chart-title">🔥 Confusion Matrix Heatmap</div>
-                    <div class="canvas-wrapper">
-                        <canvas id="confusionMatrixChart"></canvas>
                     </div>
                 </div>
 
@@ -455,9 +503,11 @@
                 per_class_metrics: []
             };
 
-            // Tentar extrair JSON do final do arquivo (novo formato)
-            const jsonSummaryMatch = content.match(/RESUMO \(metrics_summary\.json\)\s*-{40}\s*(\{[\s\S]*?\})\s*DETALHADO/);
-            const jsonDetailedMatch = content.match(/DETALHADO \(detailed_metrics\.json\)\s*-{40}\s*(\{[\s\S]*?\})\s*$/);
+            // Try to extract JSON from end of file (new format)
+            // Match: SUMMARY (metrics_summary.json)\n----------------------------------------\n{...}
+            const jsonSummaryMatch = content.match(/SUMMARY \(metrics_summary\.json\)\s*[-=]{30,}\s*(\{[\s\S]*?\})\s*(?=DETAILED)/);
+            // Match: DETAILED (detailed_metrics.json)\n----------------------------------------\n{...}
+            const jsonDetailedMatch = content.match(/DETAILED \(detailed_metrics\.json\)\s*[-=]{30,}\s*(\{[\s\S]*?\})\s*$/);
             
             if (jsonSummaryMatch && jsonDetailedMatch) {
                 try {
@@ -468,24 +518,32 @@
                     console.log('Summary keys:', Object.keys(summary));
                     console.log('Detailed keys:', Object.keys(detailed));
                     
+                    // Merge detailed into data first
                     Object.assign(data, detailed);
                     
+                    // Then merge summary for any missing keys
                     Object.keys(summary).forEach(key => {
-                        if (!(key in detailed)) {
+                        if (!(key in data)) {
                             data[key] = summary[key];
                         }
                     });
                     
-                    console.log('✅ Merged data - precision_micro:', data.precision_micro, 'precision_weighted:', data.precision_weighted);
+                    console.log('✅ Merged data - Keys:', Object.keys(data).slice(0, 10));
                     
-                    if (detailed.confusion_matrix) {
-                        data.confusion_matrix = detailed.confusion_matrix;
+                    // Process confusion matrix
+                    if (data.confusion_matrix) {
+                        console.log('✅ Confusion matrix found:', data.confusion_matrix.length + 'x' + data.confusion_matrix[0]?.length);
                     }
-                    if (detailed.match_statistics) {
-                        data.match_statistics = detailed.match_statistics;
+                    
+                    // Process match statistics
+                    if (data.match_statistics) {
+                        console.log('✅ Match statistics found:', Object.keys(data.match_statistics));
                     }
-                    if (detailed.per_class_metrics) {
-                        data.per_class_metrics = Object.entries(detailed.per_class_metrics)
+                    
+                    // Convert per_class_metrics from object to array
+                    if (data.per_class_metrics && typeof data.per_class_metrics === 'object') {
+                        // Filter and convert to array
+                        let metricsArray = Object.entries(data.per_class_metrics)
                             .filter(([className]) => !['accuracy', 'macro avg', 'weighted avg', 'micro avg'].includes(className))
                             .map(([className, metrics]) => ({
                                 class: className,
@@ -494,29 +552,111 @@
                                 f1: metrics['f1-score'],
                                 support: metrics.support
                             }));
-                    }
-                    if (detailed.mean_hierarchical_distance !== undefined) {
-                        data.hierarchical_distance_avg = detailed.mean_hierarchical_distance;
-                    }
-                    if (detailed.max_hierarchical_distance !== undefined) {
-                        data.hierarchical_distance_max = detailed.max_hierarchical_distance;
-                    }
-                    if (detailed.hierarchical_precision !== undefined) {
-                        data.hierarchical_precision = detailed.hierarchical_precision;
-                    }
-                    if (detailed.hierarchical_recall !== undefined) {
-                        data.hierarchical_recall = detailed.hierarchical_recall;
-                    }
-                    if (detailed.auroc_macro !== undefined && detailed.auroc_macro !== 'not_available') {
-                        data.auroc_macro = detailed.auroc_macro;
-                    }
-                    if (detailed.map_macro !== undefined && detailed.map_macro !== 'not_available') {
-                        data.map_macro = detailed.map_macro;
+                        
+                        // Detect and merge duplicate classes
+                        // Classes can appear as both code (1.1.1) and name (copia)
+                        const classMap = {
+                            '1.1.1': 'Copia',
+                            '1.1.2': 'Bel-Pao',
+                            '1.1.4': 'Gypsy',
+                            '1.1.5': 'ERV',
+                            '1.2': 'SINE',
+                            '1.3.3': 'L1',
+                            '2.1.1': 'hAT',
+                            '2.1.2': 'Tc1-Mariner',
+                            '2.1.4': 'MuDR',
+                            '2.1.5': 'CACTA',
+                            '2.1.6': 'PIF-Harbinger'
+                        };
+                        
+                        const merged = new Map();
+                        const duplicates = [];
+                        
+                        metricsArray.forEach(metric => {
+                            const className = metric.class;
+                            const classNameLower = className.toLowerCase().replace(/[_-]/g, '');
+                            
+                            // Check if this is a code that maps to a name
+                            const mappedName = classMap[className];
+                            
+                            // Try to find if we already have this class (by code or name)
+                            let existingKey = null;
+                            
+                            for (let [key, value] of merged.entries()) {
+                                const keyLower = key.toLowerCase().replace(/[_-]/g, '');
+                                const valueName = value.class.toLowerCase().replace(/[_-]/g, '');
+                                
+                                // Check if names match (normalized)
+                                if (keyLower === classNameLower || valueName === classNameLower) {
+                                    existingKey = key;
+                                    break;
+                                }
+                                
+                                // Check if code maps to this name
+                                if (mappedName && valueName === mappedName.toLowerCase().replace(/[_-]/g, '')) {
+                                    existingKey = key;
+                                    break;
+                                }
+                                
+                                // Check if existing code maps to current name
+                                const existingMapped = classMap[key];
+                                if (existingMapped && existingMapped.toLowerCase().replace(/[_-]/g, '') === classNameLower) {
+                                    existingKey = key;
+                                    break;
+                                }
+                            }
+                            
+                            if (existingKey) {
+                                // Merge: keep the one with better metrics (higher support)
+                                const existing = merged.get(existingKey);
+                                if (metric.support > existing.support) {
+                                    duplicates.push({ old: existingKey, new: className, kept: className });
+                                    merged.set(className, metric);
+                                    merged.delete(existingKey);
+                                } else {
+                                    duplicates.push({ old: className, new: existingKey, kept: existingKey });
+                                }
+                            } else {
+                                merged.set(className, metric);
+                            }
+                        });
+                        
+                        if (duplicates.length > 0) {
+                            console.warn('⚠️ Detected duplicate classes:', duplicates);
+                            console.log('✅ Merged duplicates, keeping classes with higher support');
+                        }
+                        
+                        // Filter out classes with zero metrics AND low support (likely duplicates)
+                        data.per_class_metrics = Array.from(merged.values()).filter(metric => {
+                            // Keep if has meaningful metrics OR significant support
+                            const hasMetrics = metric.precision > 0 || metric.recall > 0 || metric.f1 > 0;
+                            const hasSupport = metric.support > 0;
+                            return hasMetrics || hasSupport;
+                        });
+                        
+                        console.log('✅ Converted per_class_metrics:', data.per_class_metrics.length + ' unique classes (removed ' + (metricsArray.length - data.per_class_metrics.length) + ' duplicates/empty)');
                     }
                     
+                    // Map hierarchical distance fields
+                    if (data.mean_hierarchical_distance !== undefined) {
+                        data.hierarchical_distance_avg = data.mean_hierarchical_distance;
+                    }
+                    if (data.max_hierarchical_distance !== undefined) {
+                        data.hierarchical_distance_max = data.max_hierarchical_distance;
+                    }
+                    
+                    // Ensure auroc and map are not "not_available" string
+                    if (data.auroc_macro === 'not_available') {
+                        data.auroc_macro = undefined;
+                    }
+                    if (data.map_macro === 'not_available') {
+                        data.map_macro = undefined;
+                    }
+                    
+                    console.log('✅ Final data object ready with', Object.keys(data).length, 'keys');
                     return data;
                 } catch (e) {
-                    console.warn('Erro ao parsear JSON embutido, tentando parse de texto:', e);
+                    console.warn('❌ Error parsing embedded JSON, trying text parse:', e);
                 }
             }
 
@@ -658,6 +798,30 @@
             document.getElementById('metricsContent').style.display = 'block';
             document.getElementById('noDataState').style.display = 'none';
 
+            // Show info panel if hierarchical matching was applied
+            const infoPanel = document.getElementById('infoPanel');
+            const infoPanelText = document.getElementById('infoPanelText');
+            if (data.flexible_matching_applied || data.match_statistics) {
+                infoPanel.style.display = 'block';
+                let infoText = '<strong>This report uses hierarchical matching</strong>, which considers taxonomic relationships when comparing predictions. ';
+                
+                if (data.normalization_applied) {
+                    infoText += 'Labels were normalized (lowercase, removed hyphens/underscores) for comparison. ';
+                }
+                
+                if (data.match_statistics) {
+                    const stats = data.match_statistics;
+                    const total = Object.values(stats).reduce((a, b) => a + b, 0);
+                    const exactPct = ((stats.exact_hierarchical || 0) / total * 100).toFixed(1);
+                    const siblingPct = ((stats.hierarchical_sibling || 0) / total * 100).toFixed(1);
+                    infoText += `<br><br>Match breakdown: ${exactPct}% exact matches, ${siblingPct}% sibling matches (same taxonomic order).`;
+                }
+                
+                infoPanelText.innerHTML = infoText;
+            } else {
+                infoPanel.style.display = 'none';
+            }
+
             // Render Summary
             renderSummary(data);
 
@@ -688,7 +852,9 @@
 
         function renderSummary(data) {
             const summaryContent = document.getElementById('summaryContent');
-            summaryContent.innerHTML = `
+            
+            // Build summary items
+            let summaryHTML = `
                 <div class="summary-item">
                     <span class="summary-label">Total Samples</span>
                     <span class="summary-value">${data.total_samples || 'N/A'}</span>
@@ -704,8 +870,36 @@
                 <div class="summary-item">
                     <span class="summary-label">F1-Score (Macro)</span>
                     <span class="summary-value">${formatPercent(data.f1_macro)}</span>
-                </div>
-            `;
+                </div>`;
+            
+            // Add hierarchical matching info if available
+            if (data.flexible_matching_applied) {
+                summaryHTML += `
+                <div class="summary-item">
+                    <span class="summary-label">Flexible Matching</span>
+                    <span class="summary-value">✅ Applied</span>
+                </div>`;
+            }
+            
+            // Add normalization info if available
+            if (data.normalization_applied) {
+                summaryHTML += `
+                <div class="summary-item">
+                    <span class="summary-label">Label Normalization</span>
+                    <span class="summary-value">✅ Applied</span>
+                </div>`;
+            }
+            
+            // Add hierarchical F1 if different from regular accuracy
+            if (data.hierarchical_f1 && data.hierarchical_f1 !== data.accuracy) {
+                summaryHTML += `
+                <div class="summary-item">
+                    <span class="summary-label">Hierarchical F1-Score</span>
+                    <span class="summary-value">${formatPercent(data.hierarchical_f1)}</span>
+                </div>`;
+            }
+            
+            summaryContent.innerHTML = summaryHTML;
         }
 
         function renderMainMetrics(data) {
@@ -882,39 +1076,58 @@
             }
 
             const hasHierarchical = data.hierarchical_precision !== undefined;
+            const hasDistanceMetrics = data.hierarchical_distance_avg !== undefined || 
+                                       data.mean_hierarchical_distance !== undefined;
+
+            // Prepare labels and datasets
+            const labels = ['Precision', 'Recall', 'F1-Score'];
+            const datasets = [
+                {
+                    label: 'Standard Metrics',
+                    data: [
+                        data.precision_macro || 0,
+                        data.recall_macro || 0,
+                        data.f1_macro || 0
+                    ],
+                    borderColor: 'rgba(110, 200, 241, 1)',
+                    backgroundColor: 'rgba(110, 200, 241, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }
+            ];
+
+            if (hasHierarchical) {
+                datasets.push({
+                    label: 'Hierarchical Metrics',
+                    data: [
+                        data.hierarchical_precision || 0,
+                        data.hierarchical_recall || 0,
+                        data.hierarchical_f1 || 0
+                    ],
+                    borderColor: 'rgba(126, 231, 184, 1)',
+                    backgroundColor: 'rgba(126, 231, 184, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                });
+            }
+
+            // Add distance info in the subtitle if available
+            let distanceInfo = '';
+            if (hasDistanceMetrics) {
+                const avgDist = data.hierarchical_distance_avg || data.mean_hierarchical_distance || 0;
+                const maxDist = data.hierarchical_distance_max || data.max_hierarchical_distance || 0;
+                distanceInfo = ` | Mean Distance: ${avgDist.toFixed(2)} | Max Distance: ${maxDist.toFixed(0)}`;
+            }
 
             charts.hierarchical = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Precision', 'Recall', 'F1-Score'],
-                    datasets: [
-                        {
-                            label: 'Standard Metrics',
-                            data: [
-                                data.precision_macro || 0,
-                                data.recall_macro || 0,
-                                data.f1_macro || 0
-                            ],
-                            borderColor: 'rgba(110, 200, 241, 1)',
-                            backgroundColor: 'rgba(110, 200, 241, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        },
-                        ...(hasHierarchical ? [{
-                            label: 'Hierarchical Metrics',
-                            data: [
-                                data.hierarchical_precision || 0,
-                                data.hierarchical_recall || 0,
-                                data.hierarchical_f1 || 0
-                            ],
-                            borderColor: 'rgba(126, 231, 184, 1)',
-                            backgroundColor: 'rgba(126, 231, 184, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }] : [])
-                    ]
+                    labels: labels,
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -927,6 +1140,19 @@
                                 font: {
                                     size: 13
                                 }
+                            }
+                        },
+                        title: {
+                            display: hasDistanceMetrics,
+                            text: distanceInfo,
+                            color: '#7EE7B8',
+                            font: {
+                                size: 11,
+                                weight: 'normal'
+                            },
+                            padding: {
+                                top: 0,
+                                bottom: 10
                             }
                         },
                         tooltip: {
@@ -970,7 +1196,7 @@
             
             // Filter out aggregate and invalid classes
             const skipClasses = ['accuracy', 'macro avg', 'weighted avg', 'micro avg'];
-            const validMetrics = data.per_class_metrics.filter(metric => {
+            let validMetrics = data.per_class_metrics.filter(metric => {
                 const className = metric.class || '';
                 // Skip aggregate classes
                 if (skipClasses.includes(className)) return false;
@@ -978,6 +1204,9 @@
                 if (className.length <= 2 && !/^[0-9.]+$/.test(className)) return false;
                 return true;
             });
+            
+            // Sort by support (descending) to show most important classes first
+            validMetrics.sort((a, b) => (b.support || 0) - (a.support || 0));
             
             // If no valid metrics, don't show the section
             if (validMetrics.length === 0) {
@@ -1204,7 +1433,7 @@
 
         function renderConfusionMatrix(data) {
             const section = document.getElementById('confusionMatrixSection');
-            const ctx = document.getElementById('confusionMatrixChart').getContext('2d');
+            const canvas = document.getElementById('confusionMatrixChart');
             
             if (!data.confusion_matrix || data.confusion_matrix.length === 0) {
                 return;
@@ -1212,100 +1441,507 @@
             
             section.style.display = 'block';
             
+            // Destroy previous chart if it exists
             if (charts.confusionMatrix) {
-                charts.confusionMatrix.destroy();
+                if (charts.confusionMatrix.destroy) charts.confusionMatrix.destroy();
+                charts.confusionMatrix = null;
             }
 
-            // Get class labels (prefer names over codes)
-            const labels = data.confusion_matrix_names || data.confusion_matrix_labels || 
-                          Array.from({length: data.confusion_matrix.length}, (_, i) => `Class ${i}`);
-
-            // Flatten confusion matrix for heatmap visualization
             const matrix = data.confusion_matrix;
-            const size = matrix.length;
-            const flatData = [];
+            const rawLabels = data.confusion_matrix_labels || data.confusion_matrix_names || 
+                             Array.from({length: matrix.length}, (_, i) => `Class ${i}`);
             
-            for (let i = 0; i < size; i++) {
-                for (let j = 0; j < size; j++) {
-                    flatData.push({
-                        x: j,
-                        y: i,
-                        v: matrix[i][j],
-                        trueLabel: labels[i],
-                        predLabel: labels[j]
-                    });
+            console.log('\n🔍 RAW CONFUSION MATRIX DEBUG:');
+            console.log('Matrix size:', matrix.length, 'x', matrix[0]?.length);
+            console.log('Raw labels:', rawLabels);
+            console.log('\nDiagonal values (correct predictions):');
+            for (let i = 0; i < matrix.length; i++) {
+                if (matrix[i][i] > 0) {
+                    const rowSum = matrix[i].reduce((a, b) => a + b, 0);
+                    console.log(`  [${i}] ${rawLabels[i]}: ${matrix[i][i]} correct out of ${rowSum} total`);
                 }
             }
-
-            // Simple heatmap using scatter plot
-            charts.confusionMatrix = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Confusion Matrix',
-                        data: flatData.map(d => ({x: d.x, y: d.y})),
-                        backgroundColor: flatData.map(d => {
-                            const max = Math.max(...matrix.flat());
-                            const intensity = max > 0 ? d.v / max : 0;
-                            return `rgba(126, 231, 184, ${intensity})`;
-                        }),
-                        pointRadius: 15,
-                        pointHoverRadius: 18
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const point = flatData[context.dataIndex];
-                                    return [
-                                        `True: ${point.trueLabel}`,
-                                        `Predicted: ${point.predLabel}`,
-                                        `Count: ${point.v}`
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom',
-                            title: {
-                                display: true,
-                                text: 'Predicted Class',
-                                color: '#7EE7B8'
-                            },
-                            ticks: { 
-                                color: '#7EE7B8',
-                                callback: function(value) {
-                                    return labels[value] || value;
-                                }
-                            },
-                            grid: { color: 'rgba(126, 231, 184, 0.1)' }
-                        },
-                        y: {
-                            type: 'linear',
-                            title: {
-                                display: true,
-                                text: 'True Class',
-                                color: '#7EE7B8'
-                            },
-                            ticks: { 
-                                color: '#7EE7B8',
-                                callback: function(value) {
-                                    return labels[value] || value;
-                                }
-                            },
-                            grid: { color: 'rgba(126, 231, 184, 0.1)' }
+            console.log('\nEmpty labels (all zeros):');
+            for (let i = 0; i < matrix.length; i++) {
+                const rowSum = matrix[i].reduce((a, b) => a + b, 0);
+                const colSum = matrix.reduce((sum, row) => sum + row[i], 0);
+                if (rowSum === 0 && colSum === 0) {
+                    console.log(`  [${i}] ${rawLabels[i]}: completely empty`);
+                }
+            }
+            
+            // Map hierarchical codes to readable names
+            const codeToName = {
+                '1.1.1': 'Copia',
+                '1.1.2': 'Bel-Pao',
+                '1.1.3': 'Copia',
+                '1.1.4': 'ERV',
+                '1.1.5': 'Gypsy',
+                '1.2': 'SINE',
+                '1.3.3': 'L1',
+                '1.3.4': 'L1',
+                '2.1.1': 'hAT',
+                '2.1.2': 'Tc1-Mariner',
+                '2.1.4': 'MuDR',
+                '2.1.5': 'Mutator',
+                '2.1.6': 'PIF-Harbinger',
+                '2.1.7': 'PIF-Harbinger',
+                '2.1.9': 'Tc1-Mariner',
+                '2.1.11': 'hAT',
+                // Normalized names map to themselves
+                'belpao': 'Bel-Pao',
+                'copia': 'Copia',
+                'erv': 'ERV',
+                'gypsy': 'Gypsy',
+                'sine': 'SINE',
+                'l1': 'L1',
+                'hat': 'hAT',
+                'cacta': 'CACTA',
+                'mutator': 'Mutator',
+                'pifharbinger': 'PIF-Harbinger',
+                'tc1mariner': 'Tc1-Mariner',
+                'nonte': 'Non-TE'
+            };
+            
+            // Convert labels to readable names
+            const convertedLabels = rawLabels.map(label => {
+                const labelStr = String(label).trim();
+                return codeToName[labelStr] || labelStr;
+            });
+            
+            console.log('\n🔄 LABEL CONVERSION:');
+            for (let i = 0; i < rawLabels.length; i++) {
+                if (rawLabels[i] !== convertedLabels[i]) {
+                    const rowSum = matrix[i].reduce((a, b) => a + b, 0);
+                    console.log(`  [${i}] "${rawLabels[i]}" → "${convertedLabels[i]}" (${rowSum} samples)`);
+                }
+            }
+            
+            // Find duplicate classes and merge them
+            const labelMap = new Map();
+            const mergeIndices = new Map(); // Maps old index to new index
+            
+            convertedLabels.forEach((label, i) => {
+                if (!labelMap.has(label)) {
+                    labelMap.set(label, labelMap.size);
+                }
+                mergeIndices.set(i, labelMap.get(label));
+            });
+            
+            const uniqueLabels = Array.from(labelMap.keys());
+            const newSize = uniqueLabels.length;
+            
+            console.log('\n🔗 MERGING DUPLICATES:');
+            const mergeGroups = new Map();
+            for (let i = 0; i < convertedLabels.length; i++) {
+                const label = convertedLabels[i];
+                if (!mergeGroups.has(label)) {
+                    mergeGroups.set(label, []);
+                }
+                mergeGroups.get(label).push({ index: i, original: rawLabels[i] });
+            }
+            for (const [label, indices] of mergeGroups.entries()) {
+                if (indices.length > 1) {
+                    console.log(`  "${label}" merges:`, indices.map(x => `[${x.index}]${x.original}`).join(' + '));
+                }
+            }
+            
+            console.log('\n✅ Result: Merged from', matrix.length, 'to', newSize, 'unique classes');
+            
+            // Create merged matrix
+            const mergedMatrix = Array(newSize).fill(0).map(() => Array(newSize).fill(0));
+            
+            console.log('\n📊 MERGING MATRIX VALUES:');
+            for (let i = 0; i < matrix.length; i++) {
+                for (let j = 0; j < matrix[i].length; j++) {
+                    const value = matrix[i][j];
+                    if (value > 0) {
+                        const newI = mergeIndices.get(i);
+                        const newJ = mergeIndices.get(j);
+                        mergedMatrix[newI][newJ] += value;
+                        
+                        // Log significant diagonal merges
+                        if (i === j && value > 100 && (newI !== i || newJ !== j)) {
+                            console.log(`  Diagonal: [${i},${i}] ${rawLabels[i]}(${value}) → [${newI},${newJ}] ${uniqueLabels[newI]}`);
                         }
                     }
                 }
-            });
+            }
+            
+            console.log('\n📈 MERGED MATRIX DIAGONAL:');
+            for (let i = 0; i < newSize; i++) {
+                const rowSum = mergedMatrix[i].reduce((a, b) => a + b, 0);
+                if (rowSum > 0) {
+                    console.log(`  [${i}] ${uniqueLabels[i]}: ${mergedMatrix[i][i]} correct / ${rowSum} total (${(mergedMatrix[i][i]/rowSum*100).toFixed(1)}%)`);
+                }
+            }
+            
+            // Filter out empty classes (all zeros)
+            const nonEmptyIndices = [];
+            const filteredLabels = [];
+            
+            for (let i = 0; i < newSize; i++) {
+                const rowSum = mergedMatrix[i].reduce((a, b) => a + b, 0);
+                const colSum = mergedMatrix.reduce((sum, row) => sum + row[i], 0);
+                
+                if (rowSum > 0 || colSum > 0) {
+                    nonEmptyIndices.push(i);
+                    filteredLabels.push(uniqueLabels[i]);
+                }
+            }
+            
+            // Create final filtered matrix
+            const finalMatrix = nonEmptyIndices.map(i => 
+                nonEmptyIndices.map(j => mergedMatrix[i][j])
+            );
+            
+            // Calculate statistics for debugging
+            let totalCorrect = 0;
+            let totalErrors = 0;
+            let totalSamples = 0;
+            
+            for (let i = 0; i < finalMatrix.length; i++) {
+                for (let j = 0; j < finalMatrix[i].length; j++) {
+                    totalSamples += finalMatrix[i][j];
+                    if (i === j) {
+                        totalCorrect += finalMatrix[i][j];
+                    } else {
+                        totalErrors += finalMatrix[i][j];
+                    }
+                }
+            }
+            
+            const calculatedAccuracy = totalSamples > 0 ? (totalCorrect / totalSamples * 100).toFixed(2) : 0;
+            
+            console.log('Final matrix size after filtering:', finalMatrix.length, 'classes:', filteredLabels);
+            console.log('📊 Matrix Statistics:');
+            console.log('  Total samples:', totalSamples);
+            console.log('  Correct predictions (diagonal):', totalCorrect);
+            console.log('  Errors (off-diagonal):', totalErrors);
+            console.log('  Calculated accuracy:', calculatedAccuracy + '%');
+            
+            // Compare with reported metrics
+            if (data.accuracy !== undefined) {
+                const reportedAccuracy = (data.accuracy * 100).toFixed(2);
+                const match = Math.abs(parseFloat(calculatedAccuracy) - parseFloat(reportedAccuracy)) < 0.1;
+                console.log('  Reported accuracy:', reportedAccuracy + '%', match ? '✅ MATCH' : '❌ MISMATCH');
+            }
+            
+            // Calculate and log per-class metrics from merged matrix
+            console.log('\n📋 CALCULATED PER-CLASS METRICS (from merged matrix):');
+            for (let i = 0; i < finalMatrix.length; i++) {
+                const label = filteredLabels[i];
+                const rowSum = finalMatrix[i].reduce((a, b) => a + b, 0);
+                const colSum = finalMatrix.reduce((sum, row) => sum + row[i], 0);
+                const tp = finalMatrix[i][i]; // true positives (diagonal)
+                const fp = colSum - tp; // false positives (predicted this class but wrong)
+                const fn = rowSum - tp; // false negatives (was this class but predicted wrong)
+                
+                const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+                const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+                const f1 = (precision + recall) > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
+                
+                console.log(`  ${label}:`);
+                console.log(`    Support: ${rowSum}`);
+                console.log(`    TP: ${tp}, FP: ${fp}, FN: ${fn}`);
+                console.log(`    Precision: ${(precision * 100).toFixed(2)}%, Recall: ${(recall * 100).toFixed(2)}%, F1: ${f1.toFixed(4)}`);
+                
+                // Compare with reported metrics if available
+                if (data.per_class_metrics) {
+                    const reported = data.per_class_metrics.find(m => m.class === label);
+                    if (reported) {
+                        const precMatch = Math.abs(precision - (reported.precision || 0)) < 0.01;
+                        const recMatch = Math.abs(recall - (reported.recall || 0)) < 0.01;
+                        console.log(`    Reported: Prec=${(reported.precision * 100).toFixed(2)}% ${precMatch ? '✅' : '❌'}, Rec=${(reported.recall * 100).toFixed(2)}% ${recMatch ? '✅' : '❌'}`);
+                    }
+                }
+            }
+            
+            const size = finalMatrix.length;
+            const labels = filteredLabels;
+            
+            // Limit display for very large matrices
+            const maxDisplay = 20;
+            let displayMatrix = finalMatrix;
+            let displayLabels = labels;
+            
+            if (size > maxDisplay) {
+                // Only show top classes by sum (row + column)
+                const classSums = finalMatrix.map((row, i) => ({
+                    index: i,
+                    sum: row.reduce((a, b) => a + b, 0) + finalMatrix.reduce((s, r) => s + r[i], 0)
+                }));
+                classSums.sort((a, b) => b.sum - a.sum);
+                const topIndices = classSums.slice(0, maxDisplay).map(x => x.index).sort((a, b) => a - b);
+                
+                displayMatrix = topIndices.map(i => topIndices.map(j => finalMatrix[i][j]));
+                displayLabels = topIndices.map(i => labels[i]);
+                console.log(`⚠️ Confusion matrix too large (${size}x${size}), showing top ${maxDisplay} classes`);
+            }
+            
+            // Create custom heatmap
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const containerWidth = canvas.parentElement.clientWidth;
+            const containerHeight = canvas.parentElement.clientHeight;
+            
+            canvas.width = containerWidth * dpr;
+            canvas.height = containerHeight * dpr;
+            canvas.style.width = containerWidth + 'px';
+            canvas.style.height = containerHeight + 'px';
+            ctx.scale(dpr, dpr);
+            
+            const displaySize = displayMatrix.length;
+            const padding = 180; // Increased for stats
+            const cellSize = Math.max(
+                Math.min(
+                    (containerWidth - 2 * padding) / displaySize,
+                    (containerHeight - 2 * padding) / displaySize,
+                    70
+                ),
+                30
+            );
+            
+            const gridWidth = cellSize * displaySize;
+            const gridHeight = cellSize * displaySize;
+            const startX = (containerWidth - gridWidth) / 2;
+            const startY = (containerHeight - gridHeight) / 2;
+            
+            // Find max value for normalization
+            const maxValue = Math.max(...displayMatrix.flat());
+            const totalPerRow = displayMatrix.map(row => row.reduce((a, b) => a + b, 0));
+            
+            // Clear canvas
+            ctx.fillStyle = '#02121a';
+            ctx.fillRect(0, 0, containerWidth, containerHeight);
+            
+            // Calculate display statistics
+            let displayCorrect = 0;
+            let displayErrors = 0;
+            let displayTotal = 0;
+            
+            for (let i = 0; i < displaySize; i++) {
+                for (let j = 0; j < displaySize; j++) {
+                    displayTotal += displayMatrix[i][j];
+                    if (i === j) {
+                        displayCorrect += displayMatrix[i][j];
+                    } else {
+                        displayErrors += displayMatrix[i][j];
+                    }
+                }
+            }
+            
+            const displayAccuracy = displayTotal > 0 ? (displayCorrect / displayTotal * 100).toFixed(1) : 0;
+            
+            // Draw title and info
+            ctx.fillStyle = '#7EE7B8';
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.textAlign = 'center';
+            ctx.fillText('Predicted Class →', containerWidth / 2, startY - 90);
+            
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.fillStyle = '#6EC8F1';
+            ctx.fillText(`${displaySize} classes | ${displayTotal.toLocaleString()} samples`, containerWidth / 2, startY - 70);
+            
+            ctx.fillStyle = '#7EE7B8';
+            ctx.fillText(`✓ ${displayCorrect.toLocaleString()} correct (${displayAccuracy}%)  |  ✗ ${displayErrors.toLocaleString()} errors`, containerWidth / 2, startY - 50);
+            
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.fillStyle = '#7EE7B8';
+            ctx.save();
+            ctx.translate(startX - 70, containerHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('True Class ↓', 0, 0);
+            ctx.restore();
+            
+            // Draw cells with improved colors
+            for (let i = 0; i < displaySize; i++) {
+                for (let j = 0; j < displaySize; j++) {
+                    const value = displayMatrix[i][j];
+                    const x = startX + j * cellSize;
+                    const y = startY + i * cellSize;
+                    
+                    // Calculate color based on whether it's diagonal (correct predictions)
+                    let color;
+                    if (i === j) {
+                        // Diagonal - correct predictions (green scale)
+                        if (value === 0) {
+                            color = 'rgb(20, 30, 30)';
+                        } else {
+                            const intensity = Math.sqrt(value / maxValue); // sqrt for better contrast
+                            const r = Math.floor(20 + intensity * 106);
+                            const g = Math.floor(100 + intensity * 131);
+                            const b = Math.floor(80 + intensity * 104);
+                            color = `rgb(${r}, ${g}, ${b})`;
+                        }
+                    } else {
+                        // Off-diagonal - errors (red to orange scale)
+                        if (value === 0) {
+                            color = 'rgb(15, 15, 20)';
+                        } else {
+                            const intensity = Math.sqrt(value / maxValue);
+                            const r = Math.floor(150 + intensity * 105);
+                            const g = Math.floor(50 + intensity * 30);
+                            const b = Math.floor(50 - intensity * 30);
+                            color = `rgb(${r}, ${g}, ${b})`;
+                        }
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+                    
+                    // Draw value text if cell is large enough and value > 0
+                    if (cellSize > 35 && value > 0) {
+                        const intensity = value / maxValue;
+                        // Use black text on bright cells, white on dark
+                        ctx.fillStyle = (i === j && intensity > 0.6) ? '#000' : '#fff';
+                        ctx.font = `bold ${Math.min(cellSize / 3.5, 11)}px monospace`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(value.toString(), x + cellSize / 2, y + cellSize / 2);
+                    }
+                }
+            }
+            
+            // Draw labels with better formatting
+            ctx.fillStyle = '#7EE7B8';
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            
+            // X-axis labels (bottom, rotated)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let j = 0; j < displaySize; j++) {
+                const x = startX + j * cellSize + cellSize / 2;
+                const y = startY + gridHeight + 15;
+                
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(-Math.PI / 4);
+                const label = displayLabels[j];
+                const truncated = label.length > 18 ? label.substring(0, 15) + '...' : label;
+                ctx.fillText(truncated, 0, 0);
+                ctx.restore();
+            }
+            
+            // Y-axis labels (left)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i < displaySize; i++) {
+                const x = startX - 12;
+                const y = startY + i * cellSize + cellSize / 2;
+                const label = displayLabels[i];
+                const truncated = label.length > 18 ? label.substring(0, 15) + '...' : label;
+                ctx.fillText(truncated, x, y);
+            }
+            
+            // Add accuracy stats on the right side of each row
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'left';
+            for (let i = 0; i < displaySize; i++) {
+                const rowSum = displayMatrix[i].reduce((a, b) => a + b, 0);
+                const correct = displayMatrix[i][i];
+                const accuracy = rowSum > 0 ? (correct / rowSum * 100).toFixed(0) : 0;
+                
+                const x = startX + gridWidth + 10;
+                const y = startY + i * cellSize + cellSize / 2;
+                
+                // Color based on accuracy
+                if (accuracy >= 80) {
+                    ctx.fillStyle = '#7EE7B8';
+                } else if (accuracy >= 50) {
+                    ctx.fillStyle = '#F5B84A';
+                } else {
+                    ctx.fillStyle = '#FF6363';
+                }
+                
+                ctx.fillText(`${accuracy}%`, x, y);
+            }
+            
+            // Draw improved legend
+            const legendX = containerWidth - 120;
+            const legendY = startY + 20;
+            const legendWidth = 25;
+            const legendHeight = Math.min(140, gridHeight - 80);
+            
+            // Title for legend
+            ctx.fillStyle = '#7EE7B8';
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.textAlign = 'left';
+            ctx.fillText('Per Cell', legendX - 5, legendY - 12);
+            
+            // Single gradient legend from max to 0
+            const gradient = ctx.createLinearGradient(0, legendY, 0, legendY + legendHeight);
+            gradient.addColorStop(0, 'rgb(126, 231, 184)'); // Max value - bright
+            gradient.addColorStop(0.5, 'rgb(70, 120, 100)'); // Mid value
+            gradient.addColorStop(1, 'rgb(20, 40, 30)'); // Min value - dark
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
+            
+            // Cell intensity labels
+            ctx.fillStyle = '#7EE7B8';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(maxValue, legendX + legendWidth + 6, legendY + 11);
+            ctx.fillText('0', legendX + legendWidth + 6, legendY + legendHeight - 4);
+            
+            // Total statistics below
+            const statsY = legendY + legendHeight + 30;
+            
+            ctx.fillStyle = '#AAA';
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.fillText('Overall', legendX - 5, statsY - 5);
+            
+            // Correct predictions
+            ctx.fillStyle = '#7EE7B8';
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.fillText('✓ Correct', legendX - 5, statsY + 12);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText(displayCorrect, legendX - 5, statsY + 26);
+            
+            // Errors
+            ctx.fillStyle = '#FF6464';
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.fillText('✗ Errors', legendX - 5, statsY + 44);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText(displayErrors, legendX - 5, statsY + 58);
+            
+            // Store a placeholder to track the chart
+            charts.confusionMatrix = { type: 'custom-heatmap' };
+            
+            // Add tooltip functionality with detailed stats
+            canvas.style.cursor = 'pointer';
+            
+            canvas.onmousemove = function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const cellX = Math.floor((mouseX - startX) / cellSize);
+                const cellY = Math.floor((mouseY - startY) / cellSize);
+                
+                if (cellX >= 0 && cellX < displaySize && cellY >= 0 && cellY < displaySize) {
+                    const value = displayMatrix[cellY][cellX];
+                    const total = totalPerRow[cellY];
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                    
+                    let cellType = cellY === cellX ? '✓ CORRECT' : '✗ ERROR';
+                    
+                    canvas.title = `${cellType}\nTrue: ${displayLabels[cellY]}\nPredicted: ${displayLabels[cellX]}\nCount: ${value} (${percentage}% of row)\nRow total: ${total}`;
+                } else {
+                    canvas.title = '';
+                }
+            };
+            
+            // Log individual class statistics
+            console.log('\n📋 Per-Class Statistics:');
+            for (let i = 0; i < displaySize; i++) {
+                const rowSum = displayMatrix[i].reduce((a, b) => a + b, 0);
+                const correct = displayMatrix[i][i];
+                const errors = rowSum - correct;
+                const accuracy = rowSum > 0 ? (correct / rowSum * 100).toFixed(1) : 0;
+                console.log(`  ${displayLabels[i]}: ${correct} correct / ${rowSum} total (${accuracy}% accuracy, ${errors} errors)`);
+            }
         }
 
         function renderMatchStatistics(data) {
@@ -1323,10 +1959,26 @@
             }
 
             const stats = data.match_statistics;
-            const labels = Object.keys(stats).map(key => {
-                return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            });
+            
+            // Map keys to more friendly labels
+            const labelMap = {
+                'exact_hierarchical': '✅ Exact Match',
+                'exact_normalized': '✅ Exact (Normalized)',
+                'hierarchical_parent': '⬆️ Parent Match',
+                'hierarchical_child': '⬇️ Child Match',
+                'hierarchical_sibling': '↔️ Sibling Match',
+                'hierarchical_partial': '⚠️ Partial Match',
+                'partial_substring': '⚠️ Substring Match',
+                'no_match': '❌ No Match'
+            };
+            
+            const labels = Object.keys(stats).map(key => 
+                labelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+            );
             const values = Object.values(stats);
+            
+            // Calculate total for percentage display
+            const total = values.reduce((a, b) => a + b, 0);
 
             charts.matchStats = new Chart(ctx, {
                 type: 'doughnut',
@@ -1335,13 +1987,14 @@
                     datasets: [{
                         data: values,
                         backgroundColor: [
-                            'rgba(126, 231, 184, 0.8)',
-                            'rgba(110, 200, 241, 0.8)',
-                            'rgba(255, 206, 86, 0.8)',
-                            'rgba(153, 102, 255, 0.8)',
-                            'rgba(255, 159, 64, 0.8)',
-                            'rgba(255, 99, 132, 0.8)',
-                            'rgba(54, 162, 235, 0.8)'
+                            'rgba(126, 231, 184, 0.9)',  // Exact match - bright green
+                            'rgba(110, 200, 241, 0.9)',  // Exact normalized - blue
+                            'rgba(255, 206, 86, 0.9)',   // Parent - yellow
+                            'rgba(153, 102, 255, 0.9)',  // Child - purple
+                            'rgba(255, 159, 64, 0.9)',   // Sibling - orange
+                            'rgba(255, 206, 186, 0.9)',  // Partial - light orange
+                            'rgba(201, 203, 207, 0.9)',  // Substring - gray
+                            'rgba(255, 99, 132, 0.9)'    // No match - red
                         ],
                         borderColor: [
                             'rgba(126, 231, 184, 1)',
@@ -1349,8 +2002,9 @@
                             'rgba(255, 206, 86, 1)',
                             'rgba(153, 102, 255, 1)',
                             'rgba(255, 159, 64, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)'
+                            'rgba(255, 206, 186, 1)',
+                            'rgba(201, 203, 207, 1)',
+                            'rgba(255, 99, 132, 1)'
                         ],
                         borderWidth: 2
                     }]
@@ -1364,15 +2018,15 @@
                             position: 'right',
                             labels: {
                                 color: '#7EE7B8',
-                                font: { size: 12 }
+                                font: { size: 12 },
+                                padding: 10
                             }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
                                 }
                             }
                         }

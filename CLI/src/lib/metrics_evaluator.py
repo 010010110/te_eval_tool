@@ -51,6 +51,7 @@ class TEMetricsEvaluator:
                 label_map[normalized] = code
         
         # Mapeamentos adicionais para variações comuns dos modelos
+        # BASEADO NO TREE.TXT OFICIAL
         additional_mappings = {
             # ClassI/ClassII variações
             'classi': '1',
@@ -58,82 +59,92 @@ class TEMetricsEvaluator:
             'class1': '1',
             'class2': '2',
             
-            # LTR superfamily
+            # LTR superfamily (1.1)
             'ltr': '1.1',
-            'copia': '1.1.1',
+            'copia': '1.1.3',        # Corrigido de 1.1.1 para 1.1.3
             'belpao': '1.1.2',
             'bel': '1.1.2',
             'pao': '1.1.2',
-            'retrovirus': '1.1.3',
-            'gypsy': '1.1.4',
-            'erv': '1.1.5',
+            'erv': '1.1.4',          # Corrigido de 1.1.5 para 1.1.4
+            'gypsy': '1.1.5',        # Corrigido de 1.1.4 para 1.1.5
+            'retrovirus': '1.1.6',   # Corrigido de 1.1.3 para 1.1.6
             
-            # SINE
+            # SINE (1.2)
             'sine': '1.2',
             '5s': '1.2.1',
             '7sl': '1.2.2',
-            'trna': '1.2.3',
+            'trna': '1.2.4',         # Corrigido de 1.2.3 para 1.2.4
             
-            # LINE
+            # LINE (1.3)
             'line': '1.3',
-            'i': '1.3.1',
-            'jockey': '1.3.2',
-            'l1': '1.3.3',
-            'rte': '1.3.4',
-            'r2': '1.3.5',
+            'i': '1.3.2',            # Corrigido de 1.3.1 para 1.3.2
+            'jockey': '1.3.3',       # Corrigido de 1.3.2 para 1.3.3
+            'l1': '1.3.4',           # Corrigido de 1.3.3 para 1.3.4
+            'r2': '1.3.5',           # Mantido
+            'rte': '1.3.6',          # Corrigido de 1.3.4 para 1.3.6
             
-            # DIRS
+            # DIRS (1.4)
             'dirs': '1.4.1',
             'ngaro': '1.4.2',
-            'viper': '1.4',  # DIRS order
+            'viper': '1.4',          # DIRS order
             
-            # PLE
+            # PLE (1.5)
             'ple': '1.5',
             'penelope': '1.5.1',
             
-            # TRIM
+            # TRIM (1.6)
             'trim': '1.6',
             
-            # ClassII - TIR
+            # Sola (1.7)
+            'sola': '1.7.2',
+            
+            # ClassII - TIR (2.1)
             'tir': '2.1',
             'tirs': '2.1',
             'subclassi': '2.1',
             'subclass1': '2.1',
-            'hat': '2.1.1',
-            'tc1mariner': '2.1.2',
-            'tc1': '2.1.2',
-            'mariner': '2.1.2',
-            'p': '2.1.3',
+            'cacta': '2.1.2',        # Corrigido de 2.1.5 para 2.1.2
+            'merlin': '2.1.3',       # Corrigido de 2.1.9 para 2.1.3
             'mudr': '2.1.4',
-            'mutator': '2.1.4',
-            'cacta': '2.1.5',
-            'pifharbinger': '2.1.6',
-            'pif': '2.1.6',
-            'harbinger': '2.1.6',
-            'piggybac': '2.1.7',
-            'piggyb': '2.1.7',
-            'transib': '2.1.8',
-            'merlin': '2.1.9',
+            'mutator': '2.1.5',      # Corrigido de 2.1.4 para 2.1.5
+            'p': '2.1.6',            # Corrigido de 2.1.3 para 2.1.6
+            'pifharbinger': '2.1.7', # Corrigido de 2.1.6 para 2.1.7
+            'pif': '2.1.7',
+            'harbinger': '2.1.7',
+            'piggybac': '2.1.8',     # Corrigido de 2.1.7 para 2.1.8
+            'piggyb': '2.1.8',
+            'tc1mariner': '2.1.9',   # Corrigido de 2.1.2 para 2.1.9
+            'tc1': '2.1.9',
+            'mariner': '2.1.9',
+            'transib': '2.1.10',     # Corrigido de 2.1.8 para 2.1.10
+            'hat': '2.1.11',         # Corrigido de 2.1.1 para 2.1.11
             
-            # ClassII - outros
+            # ClassII - Crypton (2.2)
             'crypton': '2.2.1',
             'cryptons': '2.2',
+            
+            # ClassII - Helitron (2.3)
             'helitron': '2.3.1',
             'helitrons': '2.3',
-            'subclass2': '2.3',  # Helitron/Maverick
+            'subclass2': '2.3',
+            
+            # ClassII - MITE (2.4)
             'mite': '2.4',
-            'maverick': '2.6',
             
-            # Academ e outros
-            'academ': '2.5.1',
-            'kolobok': '2.5.2',
-            'ginger2': '2.5.3',
-            'tdd': '2.5.3',
+            # ClassII - Outros (2.5)
+            'academ': '2.5.2',       # Corrigido de 2.5.1 para 2.5.2
+            'chapaev': '2.5.3',      # Corrigido de 2.5.5 para 2.5.3
             'ginger1': '2.5.4',
-            'chapaev': '2.5.5',
+            'ginger2': '2.5.5',      # Corrigido de 2.5.3 para 2.5.5
+            'tdd': '2.5.5',
+            'isl2eu': '2.5.6',
+            'kolobok': '2.5.7',      # Corrigido de 2.5.2 para 2.5.7
+            'mirage': '2.5.8',
+            'novosib': '2.5.9',
+            'zator': '2.5.11',
             
-            # Variações adicionais que podem aparecer nos modelos
-            'maverick': '2.6',  # Maverick já estava mas garantir
+            # ClassII - Maverick (2.6)
+            'maverick': '2.6.1',     # Corrigido de 2.6 para 2.6.1
             
             # NOTA: NonTE (Non-Transposable Element) NÃO é mapeado intencionalmente
             # pois representa ausência de TE, não um tipo de TE
@@ -151,6 +162,11 @@ class TEMetricsEvaluator:
         if not hasattr(self, '_label_code_map'):
             self._label_code_map = self._build_label_to_code_map()
         
+        # Se o label já é um código hierárquico numérico (ex: "1.7.2"), retornar direto.
+        # _normalize_label removeria os pontos → "172" → não mapearia corretamente.
+        if re.match(r'^\d+(\.|\d)*\d*$', str(label).strip()) and '.' in str(label):
+            return str(label).strip()
+
         normalized = self._normalize_label(label)
         
         # Busca exata
@@ -178,6 +194,335 @@ class TEMetricsEvaluator:
         # Remove caracteres especiais e converte para lowercase
         normalized = re.sub(r'[^a-zA-Z0-9]', '', str(label).lower())
         return normalized
+    
+    def _calculate_per_class_from_confusion_matrix(self, cm, labels, names):
+        """
+        Calcula métricas por classe diretamente da matriz de confusão.
+        Usa os nomes (names) como chaves, garantindo alinhamento correto.
+        
+        Args:
+            cm: Matriz de confusão (lista de listas)
+            labels: Labels originais (códigos hierárquicos)
+            names: Nomes mapeados correspondentes aos labels
+        
+        Returns:
+            Dict com métricas por classe usando os nomes como chaves
+        """
+        per_class = {}
+        cm_array = np.array(cm)
+        n_classes = len(cm_array)
+        
+        # Mapear nomes duplicados para consolidar métricas
+        name_to_indices = {}
+        for i, name in enumerate(names):
+            if name not in name_to_indices:
+                name_to_indices[name] = []
+            name_to_indices[name].append(i)
+        
+        # Calcular métricas para cada nome único
+        for name, indices in name_to_indices.items():
+            # Somar linhas e colunas para classes duplicadas (mesmo nome)
+            tp = sum(cm_array[i, i] for i in indices)  # True Positives (diagonal)
+            fn = sum(cm_array[i, :].sum() - cm_array[i, i] for i in indices)  # False Negatives
+            fp = sum(cm_array[:, i].sum() - cm_array[i, i] for i in indices)  # False Positives
+            support = sum(cm_array[i, :].sum() for i in indices)  # Total real occurrences
+            
+            # Calcular métricas
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+            
+            per_class[name] = {
+                'precision': precision,
+                'recall': recall,
+                'f1-score': f1_score,
+                'support': float(support)
+            }
+        
+        return per_class
+    
+    def _build_code_to_canonical_map(self):
+        """Retorna mapeamento código hierárquico → nome canônico (ex: '1.1.3' → 'Copia').
+        Usado para normalizar y_true/y_pred antes de passar ao sklearn.
+        """
+        code_to_name = {}
+        for name, code in self.hierarchy.items():
+            if name.strip() != '?':
+                code_to_name[code] = name
+        custom_names = {
+            '1': 'ClassI',
+            '2': 'ClassII',
+            '1.1': 'LTR',
+            '1.1.3': 'Copia',
+            '1.1.2': 'Bel-Pao',
+            '1.1.4': 'ERV',
+            '1.1.5': 'Gypsy',
+            '1.1.6': 'Retrovirus',
+            '1.2': 'SINE',
+            '1.2.1': '5S',
+            '1.2.2': '7SL',
+            '1.2.4': 'tRNA',
+            '1.3': 'LINE',
+            '1.3.2': 'I',
+            '1.3.3': 'Jockey',
+            '1.3.4': 'L1',
+            '1.3.5': 'R2',
+            '1.3.6': 'RTE',
+            '1.4': 'DIRS',
+            '1.4.1': 'DIRS',
+            '1.4.2': 'Ngaro',
+            '1.5': 'PLE',
+            '1.5.1': 'Penelope',
+            '1.6': 'TRIM',
+            '1.7.2': 'Sola',
+            '2.1': 'TIR',
+            '2.1.2': 'CACTA',
+            '2.1.3': 'Merlin',
+            '2.1.4': 'MuDR',
+            '2.1.5': 'Mutator',
+            '2.1.6': 'P',
+            '2.1.7': 'PIF-Harbinger',
+            '2.1.8': 'PiggyBac',
+            '2.1.9': 'Tc1-Mariner',
+            '2.1.10': 'Transib',
+            '2.1.11': 'hAT',
+            '2.2': 'Crypton',
+            '2.2.1': 'Crypton',
+            '2.3': 'Helitron',
+            '2.3.1': 'Helitron',
+            '2.4': 'MITE',
+            '2.5.2': 'Academ',
+            '2.5.3': 'Chapaev',
+            '2.5.4': 'Ginger1',
+            '2.5.5': 'Ginger2/TDD',
+            '2.5.6': 'ISL2EU',
+            '2.5.7': 'Kolobok',
+            '2.5.8': 'Mirage',
+            '2.5.9': 'Novosib',
+            '2.5.10': 'Sola',
+            '2.5.11': 'Zator',
+            '2.6': 'Maverick',
+            '2.6.1': 'Maverick',
+        }
+        for code, name in custom_names.items():
+            if code not in code_to_name:
+                code_to_name[code] = name
+        return code_to_name
+
+    def _deduplicate_class_metrics(self, class_report):
+        """
+        Remove classes duplicadas que representam a mesma família de TE.
+        Classes podem aparecer tanto como códigos hierárquicos (1.1.1) quanto nomes (copia).
+        Prioriza sempre os nomes por escrito em vez dos códigos numéricos.
+        """
+        # Criar mapeamento inverso: código -> nome preferencial do tree.txt
+        code_to_name = {}
+        
+        # Primeiro, usar os nomes oficiais do tree.txt (são os mais confiáveis)
+        for name, code in self.hierarchy.items():
+            # Ignorar entradas com '?' que são placeholders no tree.txt
+            if name.strip() != '?':
+                code_to_name[code] = name
+        
+        # Complementar com mapeamentos customizados para variações comuns
+        # (apenas se o código ainda não tiver um nome do tree.txt)
+        custom_names = {
+            '1': 'ClassI',
+            '2': 'ClassII',
+            '1.1': 'LTR',
+            '1.1.3': 'Copia',
+            '1.1.2': 'Bel-Pao',
+            '1.1.4': 'ERV',
+            '1.1.5': 'Gypsy',
+            '1.1.6': 'Retrovirus',
+            '1.2': 'SINE',
+            '1.2.1': '5S',
+            '1.2.2': '7SL',
+            '1.2.4': 'tRNA',
+            '1.3': 'LINE',
+            '1.3.2': 'I',
+            '1.3.3': 'Jockey',
+            '1.3.4': 'L1',
+            '1.3.5': 'R2',
+            '1.3.6': 'RTE',
+            '1.4': 'DIRS',
+            '1.4.1': 'DIRS',
+            '1.4.2': 'Ngaro',
+            '1.5': 'PLE',
+            '1.5.1': 'Penelope',
+            '1.6': 'TRIM',
+            '1.7.2': 'Sola',
+            '2.1': 'TIR',
+            '2.1.2': 'CACTA',
+            '2.1.3': 'Merlin',
+            '2.1.4': 'MuDR',
+            '2.1.5': 'Mutator',
+            '2.1.6': 'P',
+            '2.1.7': 'PIF-Harbinger',
+            '2.1.8': 'PiggyBac',
+            '2.1.9': 'Tc1-Mariner',
+            '2.1.10': 'Transib',
+            '2.1.11': 'hAT',
+            '2.2': 'Crypton',
+            '2.2.1': 'Crypton',
+            '2.3': 'Helitron',
+            '2.3.1': 'Helitron',
+            '2.4': 'MITE',
+            '2.5.2': 'Academ',
+            '2.5.3': 'Chapaev',
+            '2.5.4': 'Ginger1',
+            '2.5.5': 'Ginger2/TDD',
+            '2.5.6': 'ISL2EU',
+            '2.5.7': 'Kolobok',
+            '2.5.8': 'Mirage',
+            '2.5.9': 'Novosib',
+            '2.5.10': 'Sola',
+            '2.5.11': 'Zator',
+            '2.6': 'Maverick',
+            '2.6.1': 'Maverick',
+        }
+        
+        # Atualizar code_to_name com custom_names apenas se não existir
+        for code, name in custom_names.items():
+            if code not in code_to_name:
+                code_to_name[code] = name
+        
+        # Criar mapeamento inverso: nome -> código (para buscar códigos de nomes)
+        name_to_code = self._build_label_to_code_map()
+        
+        deduplicated = {}
+        skip_classes = ['accuracy', 'macro avg', 'weighted avg', 'micro avg']
+        duplicates_found = []
+        
+        # Primeiro passo: agrupar classes equivalentes
+        class_groups = {}  # código -> lista de (nome_classe, dados)
+        
+        for class_name, class_data in class_report.items():
+            # Manter métricas agregadas
+            if class_name in skip_classes:
+                deduplicated[class_name] = class_data
+                continue
+            
+            if not isinstance(class_data, dict):
+                continue
+            
+            # Determinar o código hierárquico desta classe
+            code = None
+            class_norm = self._normalize_label(class_name)
+            
+            # Se é um código numérico (formato X.X ou X.X.X)
+            if re.match(r'^\d+(\.\d+)*$', str(class_name)):
+                code = class_name
+            # Se é um nome, buscar o código correspondente
+            elif class_norm in name_to_code:
+                code = name_to_code[class_norm]
+            else:
+                # Tentar buscar parcialmente
+                for name, c in name_to_code.items():
+                    if len(name) >= 3 and (name in class_norm or class_norm in name):
+                        code = c
+                        break
+            
+            if code:
+                if code not in class_groups:
+                    class_groups[code] = []
+                class_groups[code].append((class_name, class_data))
+        
+        # Segundo passo: para cada grupo, escolher o melhor representante
+        for code, classes in class_groups.items():
+            if len(classes) == 1:
+                # Apenas uma classe com este código
+                class_name, class_data = classes[0]
+                # Se for código numérico e tivermos um nome preferido, usar o nome
+                if re.match(r'^\d+(\.\d+)*$', str(class_name)) and code in code_to_name:
+                    preferred_name = code_to_name[code]
+                    deduplicated[preferred_name] = class_data
+                else:
+                    deduplicated[class_name] = class_data
+            else:
+                # Multiple classes com mesmo código - escolher o melhor
+                # Prioridade:
+                # 1) Nome oficial do tree.txt (code_to_name[code])
+                # 2) Nome escrito (não numérico)
+                # 3) Maior support
+                
+                # Separar nomes de códigos
+                name_entries = [(n, d) for n, d in classes if not re.match(r'^\d+(\.\d+)*$', str(n))]
+                code_entries = [(n, d) for n, d in classes if re.match(r'^\d+(\.\d+)*$', str(n))]
+                
+                chosen_name = None
+                chosen_data = None
+                
+                # Primeiro, verificar se há um nome oficial do tree.txt
+                if code in code_to_name:
+                    official_name = code_to_name[code]
+                    
+                    # Procurar se alguma entrada corresponde ao nome oficial (case-insensitive)
+                    official_entry = None
+                    for n, d in name_entries:
+                        if self._normalize_label(n) == self._normalize_label(official_name):
+                            official_entry = (n, d)
+                            break
+                    
+                    if official_entry:
+                        # Usar a entrada oficial, mas com o nome exato do tree.txt
+                        chosen_name = official_name
+                        chosen_data = official_entry[1].copy()
+                        
+                        # Somar supports de todas as outras entradas
+                        for n, d in name_entries + code_entries:
+                            if n != official_entry[0]:
+                                chosen_data['support'] = chosen_data.get('support', 0) + d.get('support', 0)
+                    else:
+                        # Nome oficial não encontrado nas entradas, usar como referência
+                        chosen_name = official_name
+                        # Escolher dados da entrada com maior support
+                        all_entries = name_entries + code_entries
+                        all_entries.sort(key=lambda x: x[1].get('support', 0), reverse=True)
+                        chosen_data = all_entries[0][1].copy()
+                        
+                        # Somar supports de todas as outras entradas
+                        for n, d in all_entries[1:]:
+                            chosen_data['support'] = chosen_data.get('support', 0) + d.get('support', 0)
+                else:
+                    # Sem nome oficial, escolher entre as entradas disponíveis
+                    if name_entries:
+                        # Preferir nomes escritos, ordenar por support
+                        name_entries.sort(key=lambda x: x[1].get('support', 0), reverse=True)
+                        chosen_name, chosen_data = name_entries[0]
+                        chosen_data = chosen_data.copy()
+                        
+                        # Somar supports de códigos e outros nomes
+                        for n, d in name_entries[1:] + code_entries:
+                            chosen_data['support'] = chosen_data.get('support', 0) + d.get('support', 0)
+                    else:
+                        # Apenas códigos numéricos
+                        code_entries.sort(key=lambda x: x[1].get('support', 0), reverse=True)
+                        chosen_name, chosen_data = code_entries[0]
+                        chosen_data = chosen_data.copy()
+                        
+                        # Somar supports de outros códigos
+                        for n, d in code_entries[1:]:
+                            chosen_data['support'] = chosen_data.get('support', 0) + d.get('support', 0)
+                
+                deduplicated[chosen_name] = chosen_data
+                
+                # Registrar outras entradas como duplicatas removidas
+                for name, data in classes:
+                    duplicates_found.append({
+                        'removed': name,
+                        'kept': chosen_name,
+                        'reason': 'duplicata mesclada'
+                    })
+        
+        if duplicates_found:
+            print(f"\n⚠️  Duplicatas detectadas e mescladas ({len(duplicates_found)}):")
+            for dup in duplicates_found[:10]:  # Mostrar até 10
+                print(f"   ✂️  Removido '{dup['removed']}', mantido '{dup['kept']}' ({dup['reason']})")
+            if len(duplicates_found) > 10:
+                print(f"   ... e mais {len(duplicates_found) - 10} duplicatas")
+        
+        return deduplicated
     
     def _flexible_match(self, true_label, pred_label):
         """
@@ -305,17 +650,21 @@ class TEMetricsEvaluator:
             match_types_list.append(match_type)
             match_confidences_list.append(confidence)
             
-            # Para cálculo de métricas, usar códigos hierárquicos
-            # Se houver match hierárquico, usar o código mais específico (true)
-            if matched:
-                # Usa código true para ambos (força match)
-                y_true_codes.append(true_code)
-                y_pred_codes.append(true_code)
-            else:
-                # Mantém códigos diferentes
-                y_true_codes.append(true_code if true_code else self._normalize_label(true_label))
-                y_pred_codes.append(pred_code if pred_code else self._normalize_label(pred_label))
+            # Para cálculo de métricas, mapear sempre os labels diretamente para códigos
+            # hierárquicos — SEM depender do true_code/pred_code retornado por _flexible_match,
+            # pois quando uma das labels não mapeia, _flexible_match retorna strings normalizadas
+            # (ex: "copia") em vez de None, fazendo a mesma família aparecer como duas classes.
+            direct_true = self._label_to_hierarchical_code(true_label) or self._normalize_label(true_label)
+            direct_pred = self._label_to_hierarchical_code(pred_label) or self._normalize_label(pred_label)
+            y_true_codes.append(direct_true)
+            y_pred_codes.append(direct_pred)
         
+        # Normalizar codes → nomes canônicos para que "Copia", "copia" e "1.1.3"
+        # no ground truth sejam todos tratados como a mesma classe pelo sklearn.
+        code_to_canonical = self._build_code_to_canonical_map()
+        y_true_codes = [code_to_canonical.get(c, c) for c in y_true_codes]
+        y_pred_codes = [code_to_canonical.get(c, c) for c in y_pred_codes]
+
         y_true = pd.Series(y_true_codes)
         y_pred = pd.Series(y_pred_codes)
         
@@ -463,12 +812,28 @@ class TEMetricsEvaluator:
         
 
         class_report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
-        metrics["per_class_metrics"] = class_report
+        
+        # Deduplicate classes that represent the same TE family
+        # Classes can appear as both hierarchical codes (1.1.1) and names (copia)
+        class_report_deduplicated = self._deduplicate_class_metrics(class_report)
+        
+        # IMPORTANT: Recalculate per-class metrics from the confusion matrix
+        # to ensure they align with confusion_matrix_labels and confusion_matrix_names
+        if "confusion_matrix" in metrics and "confusion_matrix_names" in metrics:
+            per_class_from_cm = self._calculate_per_class_from_confusion_matrix(
+                metrics["confusion_matrix"],
+                metrics["confusion_matrix_labels"],
+                metrics["confusion_matrix_names"]
+            )
+            # Merge with existing class_report, prioritizing CM-based calculations
+            for class_name, class_data in per_class_from_cm.items():
+                class_report_deduplicated[class_name] = class_data
+        
+        metrics["per_class_metrics"] = class_report_deduplicated
         
 
         f1_scores_per_class = []
-        for class_name, class_data in class_report.items():
-
+        for class_name, class_data in class_report_deduplicated.items():
             if isinstance(class_data, dict) and 'f1-score' in class_data and class_name not in ['accuracy', 'macro avg', 'weighted avg']:
                 f1_scores_per_class.append(class_data['f1-score'])
         
@@ -521,6 +886,7 @@ class TEMetricsEvaluator:
             hierarchical_metrics["max_hierarchical_distance"] = np.max(distances)
             
 
+            # Cálculo correto de métricas hierárquicas considerando a ordem dos níveis
             h_precision_scores = []
             h_recall_scores = []
             
@@ -528,14 +894,26 @@ class TEMetricsEvaluator:
                 true_path = self._get_hierarchical_path(true_code)
                 pred_path = self._get_hierarchical_path(pred_code)
                 
+                # Precisão: quantos níveis preditos estão corretos (na ordem)
                 if pred_path:
-                    intersection = len(set(true_path) & set(pred_path))
-                    h_precision = intersection / len(pred_path)
+                    correct_levels = 0
+                    for i, pred_level in enumerate(pred_path):
+                        if i < len(true_path) and pred_level == true_path[i]:
+                            correct_levels += 1
+                        else:
+                            break  # Para quando encontra divergência
+                    h_precision = correct_levels / len(pred_path)
                     h_precision_scores.append(h_precision)
                 
+                # Recall: quantos níveis verdadeiros foram preditos corretamente (na ordem)
                 if true_path:
-                    intersection = len(set(true_path) & set(pred_path))
-                    h_recall = intersection / len(true_path)
+                    correct_levels = 0
+                    for i, true_level in enumerate(true_path):
+                        if i < len(pred_path) and true_level == pred_path[i]:
+                            correct_levels += 1
+                        else:
+                            break  # Para quando encontra divergência
+                    h_recall = correct_levels / len(true_path)
                     h_recall_scores.append(h_recall)
             
             hierarchical_metrics["hierarchical_precision"] = np.mean(h_precision_scores) if h_precision_scores else 0.0
